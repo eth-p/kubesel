@@ -13,6 +13,10 @@ type PidType = int32
 // Owner identifies the shell that initialized a [ManagedKubeconfig].
 // This is used for garbage collection purposes.
 type Owner struct {
+	ownerData
+}
+
+type ownerData struct {
 	Process PidType `json:"pid"`
 	Epoch   uint64  `json:"epoch"`
 }
@@ -43,7 +47,9 @@ func OwnerForProcess(pid PidType) (*Owner, error) {
 	}
 
 	return &Owner{
-		Process: pid,
-		Epoch:   bootTime,
+		ownerData: ownerData{
+			Process: pid,
+			Epoch:   bootTime,
+		},
 	}, nil
 }

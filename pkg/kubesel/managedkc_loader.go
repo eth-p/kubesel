@@ -82,7 +82,9 @@ func newManagedKubeconfigFromExistingKubeconfig(kc *loader.LoadedKubeconfig) (*M
 		file:    kc.Path,
 		config:  &kc.Config,
 		context: kcContext,
-		owner:   ext.Owner,
+		owner: Owner{
+			ownerData: ext.Owner,
+		},
 	}, nil
 }
 
@@ -95,7 +97,7 @@ func newManagedKubeconfig(sessionFile string, owner Owner) (*ManagedKubeconfig, 
 
 	// Create the ManagedByKubsel extension for the kubeconfig.
 	ext := kcextManagedByKubesel{
-		Owner: owner,
+		Owner: owner.ownerData,
 	}
 
 	extRaw := &kubeconfig.Extension{
