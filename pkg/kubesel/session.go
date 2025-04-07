@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/eth-p/kubesel/pkg/kubeconfig"
+	"github.com/eth-p/kubesel/pkg/kubeconfig/kcutils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -90,4 +91,15 @@ func IsManagedContext(kcNamedContext *kubeconfig.NamedContext) bool {
 	}
 
 	return false
+}
+
+// IsManagedKubeconfig checks if the provided [kubeconfig.Config] is managed
+// by kubesel.
+func IsManagedKubeconfig(kc *kubeconfig.Config) bool {
+	ext := kcutils.FindExtensionFrom(managedExtensionName, kc)
+	if ext == nil {
+		return false
+	}
+
+	return ext.Is(kcextApiVersion, kcextManagedByKubeselKind)
 }
