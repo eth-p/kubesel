@@ -77,7 +77,7 @@ func (k *Kubesel) GetClusterNames() []string {
 // GetAuthInfoNames returns the list of known [kubeconfig.NamedAuthInfo] names
 // inside the merged kubeconfig.
 func (k *Kubesel) GetAuthInfoNames() []string {
-	return k.lazyClusterNames()
+	return k.lazyAuthInfoNames()
 }
 
 // GetContextNames returns the list of known [kubeconfig.NamedContext] names
