@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/eth-p/kubesel/internal/fuzzy"
 	"github.com/eth-p/kubesel/pkg/kubeconfig"
 	"github.com/spf13/cobra"
 )
@@ -56,21 +57,24 @@ func UserCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	knownUsers := ksel.GetAuthInfoNames()
-	desiredUser := ""
-
-	// Select the user.
-	if len(args) == 0 {
-		// TODO: picker
-	} else {
-		desiredUser = args[0]
+	query := ""
+	if len(args) > 0 {
+		query = args[0]
 	}
 
-	if !slices.Contains(knownUsers, desiredUser) {
-		return fmt.Errorf("unknown user: %v", desiredUser)
+	available := ksel.GetAuthInfoNames()
+	desired, err := fuzzy.MatchOneOrPick(available, query)
+	if err != nil {
+		return err
 	}
 
-	session.SetAuthInfoName(desiredUser)
+	// Safeguard.
+	if !slices.Contains(available, desired) {
+		return fmt.Errorf("unknown user: %v", desired)
+	}
+
+	// Apply the user.
+	session.SetAuthInfoName(desired)
 	err = session.Save()
 	if err != nil {
 		return fmt.Errorf("error saving session: %w", err)

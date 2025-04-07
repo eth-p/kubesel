@@ -5,6 +5,7 @@ import (
 	"iter"
 	"slices"
 
+	"github.com/eth-p/kubesel/internal/fuzzy"
 	"github.com/eth-p/kubesel/pkg/kubeconfig"
 	"github.com/eth-p/kubesel/pkg/kubeconfig/kcutils"
 	"github.com/eth-p/kubesel/pkg/kubesel"
@@ -57,21 +58,24 @@ func ContextCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	knownContexts := ksel.GetAuthInfoNames()
-	desiredContext := ""
-
-	// Select the context.
-	if len(args) == 0 {
-		// TODO: picker
-	} else {
-		desiredContext = args[0]
+	query := ""
+	if len(args) > 0 {
+		query = args[0]
 	}
 
-	if !slices.Contains(knownContexts, desiredContext) {
-		return fmt.Errorf("unknown context: %v", desiredContext)
+	available := ksel.GetContextNames()
+	desired, err := fuzzy.MatchOneOrPick(available, query)
+	if err != nil {
+		return err
 	}
 
-	kcContext := kcutils.FindContext(desiredContext, ksel.GetMergedKubeconfig())
+	// Safeguard.
+	if !slices.Contains(available, desired) {
+		return fmt.Errorf("unknown context: %v", desired)
+	}
+
+	// Apply the context.
+	kcContext := kcutils.FindContext(desired, ksel.GetMergedKubeconfig())
 	if kcContext.Namespace != nil {
 		session.SetNamespace(*kcContext.Namespace)
 	}

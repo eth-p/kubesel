@@ -5,6 +5,7 @@ import (
 	"iter"
 	"slices"
 
+	"github.com/eth-p/kubesel/internal/fuzzy"
 	"github.com/eth-p/kubesel/pkg/kubeconfig"
 	"github.com/spf13/cobra"
 )
@@ -51,21 +52,23 @@ func ClusterCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	knownClusters := ksel.GetClusterNames()
-	desiredCluster := ""
-
-	// Select the cluster.
-	if len(args) == 0 {
-		// TODO: picker
-	} else {
-		desiredCluster = args[0]
+	query := ""
+	if len(args) > 0 {
+		query = args[0]
 	}
 
-	if !slices.Contains(knownClusters, desiredCluster) {
-		return fmt.Errorf("unknown cluster: %v", desiredCluster)
+	available := ksel.GetClusterNames()
+	desired, err := fuzzy.MatchOneOrPick(available, query)
+	if err != nil {
+		return err
 	}
 
-	session.SetClusterName(desiredCluster)
+	// Safeguard.
+	if !slices.Contains(available, desired) {
+		return fmt.Errorf("unknown cluster: %v", desired)
+	}
+
+	session.SetClusterName(desired)
 	err = session.Save()
 	if err != nil {
 		return fmt.Errorf("error saving session: %w", err)
