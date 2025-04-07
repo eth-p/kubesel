@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/eth-p/kubesel/pkg/kubeconfig"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 type HasExtension interface {
@@ -29,4 +30,48 @@ func ExtensionsFrom[T HasExtension](extensible *T) []kubeconfig.NamedExtension {
 	}
 
 	panic(fmt.Sprintf("unsupported type: %T", extensible))
+}
+
+// DecodeExtension decodes a [kubeconfig.Extension] into a struct, excluding
+// the `ApiVersion` and `Kind` fields. This uses the `json` struct tag when
+// decoding.
+func DecodeExtension[T any](extension *kubeconfig.Extension, target *T) error {
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook:           nil,
+		ZeroFields:           true,
+		Squash:               true,
+		Result:               target,
+		TagName:              "json",
+		SquashTagOption:      "inline",
+		IgnoreUntaggedFields: false,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return decoder.Decode(extension.Remaining)
+}
+
+// EncodeExtension encodes a struct into a [kubeconfig.Extension], excluding
+// the `ApiVersion` and `Kind` fields. This uses the `json` struct tag when
+// decoding.
+func EncodeExtension[T any](extension *T, target *kubeconfig.Extension) error {
+	target.Remaining = make(map[string]any)
+
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook:           nil,
+		ZeroFields:           true,
+		Squash:               true,
+		Result:               &target.Remaining,
+		TagName:              "json",
+		SquashTagOption:      "inline",
+		IgnoreUntaggedFields: false,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return decoder.Decode(extension)
 }

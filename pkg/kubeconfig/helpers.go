@@ -6,6 +6,13 @@ import (
 	"github.com/tiendc/go-deepcopy"
 )
 
+// Is returns true if the extension matches the provided apiVersion and kind.
+func (e *Extension) Is(apiVersion, kind string) bool {
+	return e != nil &&
+		e.ApiVersion != nil && (*e.ApiVersion == apiVersion) &&
+		e.Kind != nil && (*e.Kind == kind)
+}
+
 type cloneInto[T any] interface {
 	CloneInto(target *T)
 }
