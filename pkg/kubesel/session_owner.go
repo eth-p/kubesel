@@ -11,15 +11,15 @@ import (
 // SessionOwner identifies the shell that initialized a [Session].
 // This is used for garbage collection purposes.
 type SessionOwner struct {
-	pid      SessionOwnerPID
-	bootTime uint64
+	Process SessionOwnerPID `json:"pid"`
+	Epoch   uint64          `json:"epoch"`
 }
 
 type SessionOwnerPID = int32
 
 func (o *SessionOwner) fileName() string {
-	pidHex := strconv.FormatInt(int64(o.pid), 16)
-	bootTimeHex := strconv.FormatUint(o.bootTime, 16)
+	pidHex := strconv.FormatInt(int64(o.Process), 16)
+	bootTimeHex := strconv.FormatUint(o.Epoch, 16)
 	return fmt.Sprintf("kubesel-%s-%s-kubeconfig.yaml", bootTimeHex, pidHex)
 }
 
@@ -43,7 +43,7 @@ func SessionOwnerForProcess(pid SessionOwnerPID) (*SessionOwner, error) {
 	}
 
 	return &SessionOwner{
-		pid:      pid,
-		bootTime: bootTime,
+		Process: pid,
+		Epoch:   bootTime,
 	}, nil
 }

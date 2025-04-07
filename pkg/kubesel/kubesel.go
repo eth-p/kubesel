@@ -98,7 +98,7 @@ func (k *Kubesel) CreateSession(owner SessionOwner) (*Session, error) {
 	// Check if the session file already exists.
 	sessionFile := filepath.Join(k.sessionDir, owner.fileName())
 	if _, err := os.Stat(sessionFile); !errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("%w: owner pid %d", ErrSessionExists, owner.pid)
+		return nil, fmt.Errorf("%w: owner pid %d", ErrSessionExists, owner.Process)
 	}
 
 	// If it does not, create it.

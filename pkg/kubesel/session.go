@@ -8,7 +8,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var managedContextName = "kubesel"
+const (
+	managedContextName   = "kubesel"
+	managedExtensionName = "managed-by-kubesel"
+)
 
 // Session is a kubeconfig file managed by `kubesel`.
 type Session struct {

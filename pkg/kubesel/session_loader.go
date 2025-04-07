@@ -49,34 +49,90 @@ func newSessionFromLoadedKubeconfig(kc *loader.LoadedKubeconfig) (*Session, erro
 		)
 	}
 
-	// TODO: Implement me
+	// Decode the ownership information.
+	rawExt := kcutils.FindExtensionFrom(managedExtensionName, &kc.Config)
+	if rawExt == nil {
+		return nil, fmt.Errorf(
+			"%w: the %q extension is missing",
+			ErrSessionCorrupt,
+			managedExtensionName,
+		)
+	}
+
+	if !rawExt.Is(kcextApiVersion, kcextManagedByKubeselKind) {
+		return nil, fmt.Errorf(
+			"%w: the %q extension has the wrong apiVersion or kind",
+			ErrSessionCorrupt,
+			managedExtensionName,
+		)
+	}
+
+	var ext kcextManagedByKubesel
+	err := kcutils.DecodeExtension(rawExt, &ext)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"%w: could not decode %s: %w",
+			ErrSessionCorrupt,
+			kcextManagedByKubeselKind,
+			err,
+		)
+	}
+
 	return &Session{
 		file:    kc.Path,
 		config:  &kc.Config,
 		context: kcContext,
+		owner:   ext.SessionOwner,
 	}, nil
 }
 
 func newSessionForOwner(sessionFile string, owner SessionOwner) (*Session, error) {
-	var kcContextName = managedContextName
 	kcContext := &kubeconfig.Context{
 		Cluster:   new(string),
 		User:      new(string),
 		Namespace: new(string),
 	}
 
+	// Create the ManagedByKubsel extension for the kubeconfig.
+	ext := kcextManagedByKubesel{
+		SessionOwner: owner,
+	}
+
+	extRaw := &kubeconfig.Extension{
+		ApiVersion: kcutils.PointerFor(kcextApiVersion),
+		Kind:       kcutils.PointerFor(kcextManagedByKubeselKind),
+	}
+
+	err := kcutils.EncodeExtension(&ext, extRaw)
+	if err != nil {
+		panic(fmt.Errorf(
+			"failed to encode ManagedByKubesel extension: %w",
+			err,
+		))
+	}
+
+	// Create the kubeconfig.
+	kc := &kubeconfig.Config{
+		CurrentContext: kcutils.PointerFor(managedContextName),
+		Contexts: []kubeconfig.NamedContext{
+			{
+				Name:    kcutils.PointerFor(managedContextName),
+				Context: kcContext,
+			},
+		},
+		Extensions: []kubeconfig.NamedExtension{
+			{
+				Name:      kcutils.PointerFor(managedExtensionName),
+				Extension: extRaw,
+			},
+		},
+	}
+
+	// Return the
 	return &Session{
 		file:    sessionFile,
 		owner:   owner,
 		context: kcContext,
-		config: &kubeconfig.Config{
-			CurrentContext: &kcContextName,
-			Contexts: []kubeconfig.NamedContext{
-				{
-					Name:    &kcContextName,
-					Context: kcContext,
-				},
-			},
-		},
+		config:  kc,
 	}, nil
 }
