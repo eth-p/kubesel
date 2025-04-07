@@ -59,26 +59,37 @@ func (s *Session) Path() string {
 	return s.file
 }
 
+// GetClusterName returns the name of the active [kubeconfig.Cluster] in
+// the session file.
 func (s *Session) GetClusterName() string {
 	return *s.context.Cluster
 }
 
+// GetAuthInfoName returns the name of the active [kubeconfig.AuthInfo] in
+// the session file.
 func (s *Session) GetAuthInfoName() string {
 	return *s.context.User
 }
 
+// GetNamespace returns the name of the active namespace in the session file.
 func (s *Session) GetNamespace() string {
 	return *s.context.Namespace
 }
 
+// SetClusterName changes the active [kubeconfig.Cluster] in the session file.
+// To commit the change [Session.Save] should be called after.
 func (s *Session) SetClusterName(name string) {
 	*s.context.Cluster = name
 }
 
+// SetAuthInfoName changes the active [kubeconfig.AuthInfo] in the session file.
+// To commit the change [Session.Save] should be called after.
 func (s *Session) SetAuthInfoName(name string) {
 	*s.context.User = name
 }
 
+// SetAuthInfoName changes the active namespace in the session file.
+// To commit the change [Session.Save] should be called after.
 func (s *Session) SetNamespace(name string) {
 	*s.context.Namespace = name
 }
