@@ -5,18 +5,19 @@ import (
 )
 
 var (
-	// ErrSessionExists is returned when trying to create a new session
-	// with the same owner as an existing session.
-	ErrSessionExists = errors.New("kubesel session already exists")
+	// ErrAlreadyManaged is returned when trying to create a new
+	// [ManagedKubeconfig] with an owner that already associated with a
+	// managed kubeconfig file.
+	ErrAlreadyManaged = errors.New("already managing a kubeconfig file")
 
-	// ErrSessionCorrupt is returned when a session file cannot be loaded
-	// as kubectl configuration.
-	ErrSessionCorrupt = errors.New("kubesel session file is invalid")
+	// ErrManagedKubeconfigCorrupt is returned when a [ManagedKubeconfig] file
+	// cannot be loaded.
+	ErrManagedKubeconfigCorrupt = errors.New("managed kubeconfig file is invalid")
 
-	// ErrNoSession is returned when a session does not exist.
-	ErrNoSession = errors.New("no kubesel session")
+	// ErrUnmanaged is returned when a  [ManagedKubeconfig] does not exist.
+	ErrUnmanaged = errors.New("no kubesel-managed kubeconfig file")
 
-	// ErrOwnerProcessNotExist is returned when trying to create a session
-	// whose owner is not a living process.
-	ErrOwnerProcessNotExist = errors.New("kubesel session owner process does not exist")
+	// ErrOwnerProcessNotExist is returned when trying to create a
+	// [ManagedKubeconfig] whose owner is not a living process.
+	ErrOwnerProcessNotExist = errors.New("owner process does not exist")
 )

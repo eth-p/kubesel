@@ -35,7 +35,7 @@ func StatusCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	session, err := ksel.CurrentSession()
-	fmt.Printf("%#v\n%v\n", session, err)
+	managedKubeconfig, err := ksel.GetManagedKubeconfig()
+	fmt.Printf("%#v\n%v\n", managedKubeconfig, err)
 	return nil
 }

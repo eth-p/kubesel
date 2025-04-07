@@ -53,7 +53,7 @@ func ContextCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	session, err := ksel.CurrentSession()
+	managedConfig, err := ksel.GetManagedKubeconfig()
 	if err != nil {
 		return err
 	}
@@ -77,14 +77,14 @@ func ContextCommandMain(cmd *cobra.Command, args []string) error {
 	// Apply the context.
 	kcContext := kcutils.FindContext(desired, ksel.GetMergedKubeconfig())
 	if kcContext.Namespace != nil {
-		session.SetNamespace(*kcContext.Namespace)
+		managedConfig.SetNamespace(*kcContext.Namespace)
 	}
-	session.SetClusterName(*kcContext.Cluster)
-	session.SetAuthInfoName(*kcContext.User)
+	managedConfig.SetClusterName(*kcContext.Cluster)
+	managedConfig.SetAuthInfoName(*kcContext.User)
 
-	err = session.Save()
+	err = managedConfig.Save()
 	if err != nil {
-		return fmt.Errorf("error saving session: %w", err)
+		return fmt.Errorf("error updating kubeconfig: %w", err)
 	}
 
 	return nil

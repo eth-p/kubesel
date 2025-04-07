@@ -27,7 +27,7 @@ var internalInitCommand = cobra.Command{
 }
 
 var internalInitCommandOptions struct {
-	OwnerPID kubesel.SessionOwnerPID
+	OwnerPID kubesel.PidType
 }
 
 func init() {
@@ -37,10 +37,10 @@ func init() {
 		&internalInitCommandOptions.OwnerPID,
 		"pid",
 		-1,
-		"the PID of the session owner",
+		"the PID of the owner",
 	)
 
-	internalInitCommand.MarkFlagRequired("pid")
+	internalInitCommand.MarkFlagRequired("pid") // nolint:errcheck
 }
 
 func internalInitCommandMain(cmd *cobra.Command, args []string) error {
@@ -49,30 +49,30 @@ func internalInitCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	session, err := ksel.CurrentSession()
-	if session != nil {
+	managedKubeconfig, err := ksel.GetManagedKubeconfig()
+	if managedKubeconfig != nil {
 		os.Exit(2)
 	}
 
-	// Create the session and print the resulting file to standard out.
-	owner, err := kubesel.SessionOwnerForProcess(internalInitCommandOptions.OwnerPID)
+	// Create the managed kubeconfig and print the resulting file to stdout.
+	owner, err := kubesel.OwnerForProcess(internalInitCommandOptions.OwnerPID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kubesel error creating session: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kubesel error creating managed kubeconfig: %v\n", err)
 		os.Exit(2)
 	}
 
-	session, err = ksel.CreateSession(*owner)
+	managedKubeconfig, err = ksel.CreateManagedKubeconfig(*owner)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kubesel error creating session: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kubesel error creating managed kubeconfig: %v\n", err)
 		os.Exit(2)
 	}
 
-	err = session.Save()
+	err = managedKubeconfig.Save()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kubesel error creating session: %v\n", err)
+		fmt.Fprintf(os.Stderr, "kubesel error creating managed kubeconfig: %v\n", err)
 		os.Exit(2)
 	}
 
-	fmt.Fprintf(os.Stdout, "%s\n", session.Path())
+	fmt.Fprintf(os.Stdout, "%s\n", managedKubeconfig.Path())
 	return nil
 }

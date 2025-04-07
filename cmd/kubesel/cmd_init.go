@@ -48,7 +48,7 @@ func init() {
 		&InitCommandOptions.InheritExisting,
 		"inherit-existing",
 		false,
-		"quietly exit if a session already exists",
+		"quietly exit if already managing kubeconfig",
 	)
 }
 
@@ -63,13 +63,13 @@ func InitCommandMain(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unsupported shell: %s", args[0])
 	}
 
-	session, err := ksel.CurrentSession()
-	if !errors.Is(err, kubesel.ErrNoSession) {
+	managedKubeconfig, err := ksel.GetManagedKubeconfig()
+	if !errors.Is(err, kubesel.ErrUnmanaged) {
 		if InitCommandOptions.InheritExisting {
 			return nil
 		}
 
-		return fmt.Errorf("already have session: %s", session.Path())
+		return fmt.Errorf("already managing kubeconfig: %s", managedKubeconfig.Path())
 	}
 
 	// Replace `@@KUBESEL@@` with quoted path to kubesel executable and print

@@ -6,5 +6,5 @@ const (
 )
 
 type kcextManagedByKubesel struct {
-	SessionOwner `json:"owner"`
+	Owner `json:"owner"`
 }

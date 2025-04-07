@@ -14,17 +14,18 @@ const (
 	managedExtensionName = "managed-by-kubesel"
 )
 
-// Session is a kubeconfig file managed by `kubesel`.
-type Session struct {
-	file    string
+// ManagedKubeconfig is a kubeconfig file managed by `kubesel`.
+type ManagedKubeconfig struct {
+	file  string
+	owner Owner
+
 	config  *kubeconfig.Config
 	context *kubeconfig.Context
-	owner   SessionOwner
 }
 
-// Save writes the updated [Session] to disk, atomically replacing the its
-// prior contents.
-func (s *Session) Save() error {
+// Save writes the updated [ManagedKubeconfig] to disk, atomically replacing
+// its prior contents.
+func (s *ManagedKubeconfig) Save() error {
 	file, err := os.OpenFile(s.file+".swp", os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("creating file: %w", err)
@@ -54,43 +55,46 @@ func (s *Session) Save() error {
 	return nil
 }
 
-// Path returns the path to the session file.
-func (s *Session) Path() string {
+// Path returns the path of the managed kubeconfig file.
+func (s *ManagedKubeconfig) Path() string {
 	return s.file
 }
 
 // GetClusterName returns the name of the active [kubeconfig.Cluster] in
-// the session file.
-func (s *Session) GetClusterName() string {
+// the kubesel-managed kubeconfig.
+func (s *ManagedKubeconfig) GetClusterName() string {
 	return *s.context.Cluster
 }
 
 // GetAuthInfoName returns the name of the active [kubeconfig.AuthInfo] in
-// the session file.
-func (s *Session) GetAuthInfoName() string {
+// the kubesel-managed kubeconfig.
+func (s *ManagedKubeconfig) GetAuthInfoName() string {
 	return *s.context.User
 }
 
-// GetNamespace returns the name of the active namespace in the session file.
-func (s *Session) GetNamespace() string {
+// GetNamespace returns the name of the active namespace in the kubesel-managed
+// kubeconfig.
+func (s *ManagedKubeconfig) GetNamespace() string {
 	return *s.context.Namespace
 }
 
-// SetClusterName changes the active [kubeconfig.Cluster] in the session file.
-// To commit the change [Session.Save] should be called after.
-func (s *Session) SetClusterName(name string) {
+// SetClusterName changes the active [kubeconfig.Cluster] in the kubesel-managed
+// kubeconfig. To commit the change [ManagedKubeconfig.Save] should be called
+// after.
+func (s *ManagedKubeconfig) SetClusterName(name string) {
 	*s.context.Cluster = name
 }
 
-// SetAuthInfoName changes the active [kubeconfig.AuthInfo] in the session file.
-// To commit the change [Session.Save] should be called after.
-func (s *Session) SetAuthInfoName(name string) {
+// SetAuthInfoName changes the active [kubeconfig.AuthInfo] in the
+// kubesel-managed kubeconfig. To commit the change [ManagedKubeconfig.Save]
+// should be called after.
+func (s *ManagedKubeconfig) SetAuthInfoName(name string) {
 	*s.context.User = name
 }
 
-// SetAuthInfoName changes the active namespace in the session file.
-// To commit the change [Session.Save] should be called after.
-func (s *Session) SetNamespace(name string) {
+// SetNamespace changes the active namespace in the kubesel-managed kubeconfig.
+// To commit the change [ManagedKubeconfig.Save] should be called after.
+func (s *ManagedKubeconfig) SetNamespace(name string) {
 	*s.context.Namespace = name
 }
 

@@ -18,10 +18,10 @@ type Kubesel struct {
 	dataDir    string
 	sessionDir string
 
-	lazyCurrentSession func() (*Session, error)
-	lazyClusterNames   func() []string
-	lazyAuthInfoNames  func() []string
-	lazyContextNames   func() []string
+	lazyManagedKubeconfig func() (*ManagedKubeconfig, error)
+	lazyClusterNames      func() []string
+	lazyAuthInfoNames     func() []string
+	lazyContextNames      func() []string
 }
 
 // NewKubesel reads the kubectl configuration files and sets up this instance
@@ -45,7 +45,7 @@ func NewKubesel() (*Kubesel, error) {
 		dataDir:     dataDir,
 	}
 
-	kubesel.lazyCurrentSession = sync.OnceValues(kubesel.findCurrentSession)
+	kubesel.lazyManagedKubeconfig = sync.OnceValues(kubesel.findManagedKubeconfig)
 	kubesel.lazyClusterNames = sync.OnceValue(kubesel.findClusterNames)
 	kubesel.lazyAuthInfoNames = sync.OnceValue(kubesel.findAuthInfoNames)
 	kubesel.lazyContextNames = sync.OnceValue(kubesel.findContextNames)
@@ -58,14 +58,14 @@ func (k *Kubesel) GetMergedKubeconfig() *kubeconfig.Config {
 	return k.kubeconfigs.Merged
 }
 
-// CurrentSession returns the current kubesel [Session], if one exists.
-// If one does not exist, this returns [ErrNoSession].
+// GetManagedKubeconfig returns the current [ManagedKubeconfig], if one exists.
+// If one does not exist, this returns [ErrUnmanaged].
 //
-// The current session the considered to be the first kubeconfig file inside
-// the `KUBECONFIG` environment variable that is located inside kubesel's
+// The managed kubeconfig is considered to be the first kubeconfig file inside
+// the `KUBECONFIG` environment variable that is located within kubesel's
 // sessions directory.
-func (k *Kubesel) CurrentSession() (*Session, error) {
-	return k.lazyCurrentSession()
+func (k *Kubesel) GetManagedKubeconfig() (*ManagedKubeconfig, error) {
+	return k.lazyManagedKubeconfig()
 }
 
 // GetClusterNames returns the list of known [kubeconfig.NamedCluster] names
@@ -86,51 +86,52 @@ func (k *Kubesel) GetContextNames() []string {
 	return k.lazyContextNames()
 }
 
-// CreateSession creates a new kubesel [Session] for the given [SessionOwner].
+// CreateManagedKubeconfig creates a new kubesel [ManagedKubeconfig] for the
+// given [Owner].
 //
-// If there is already a session for the given owner, this will return an
-// [ErrSessionExists] error.
-func (k *Kubesel) CreateSession(owner SessionOwner) (*Session, error) {
+// If there is already a [ManagedKubeconfig] associated with the specified
+// owner, this will return an [ErrAlreadyManaged] error.
+func (k *Kubesel) CreateManagedKubeconfig(owner Owner) (*ManagedKubeconfig, error) {
 	if err := k.ensureSessionsDirExists(); err != nil {
 		return nil, err
 	}
 
-	// Check if the session file already exists.
-	sessionFile := filepath.Join(k.sessionDir, owner.fileName())
-	if _, err := os.Stat(sessionFile); !errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("%w: owner pid %d", ErrSessionExists, owner.Process)
+	// Check if the managed kubeconfig file already exists.
+	managedFile := filepath.Join(k.sessionDir, owner.fileName())
+	if _, err := os.Stat(managedFile); !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("%w: owner pid %d", ErrAlreadyManaged, owner.Process)
 	}
 
 	// If it does not, create it.
-	session, err := newSessionForOwner(sessionFile, owner)
+	managedConfig, err := newManagedKubeconfig(managedFile, owner)
 	if err != nil {
 		return nil, err
 	}
 
-	err = session.Save()
+	err = managedConfig.Save()
 	if err != nil {
-		return nil, fmt.Errorf("error saving session: %w", err)
+		return nil, fmt.Errorf("error saving managed kubeconfig: %w", err)
 	}
 
-	return session, nil
+	return managedConfig, nil
 }
 
-// findCurrentSession looks for the first kubesel session file found within
-// the loaded kubeconfig files.
-func (k *Kubesel) findCurrentSession() (*Session, error) {
+// findManagedKubeconfig looks for the first loaded kubeconfig file found
+// within kubesel's session directory.
+func (k *Kubesel) findManagedKubeconfig() (*ManagedKubeconfig, error) {
 	for _, kc := range k.kubeconfigs.Configs {
 		rel, err := filepath.Rel(k.sessionDir, kc.Path)
 		if err != nil || strings.HasPrefix(rel, "..") {
 			continue
 		}
 
-		return newSessionFromLoadedKubeconfig(kc)
+		return newManagedKubeconfigFromExistingKubeconfig(kc)
 	}
 
-	return nil, ErrNoSession
+	return nil, ErrUnmanaged
 }
 
-// ensureSessionDirExists creates the directory containing kubesel session
+// ensureSessionDirExists creates the directory containing managed kubeconfig
 // files if it does not already exist.
 func (k *Kubesel) ensureSessionsDirExists() error {
 	err := os.MkdirAll(k.sessionDir, 0o700)

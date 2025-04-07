@@ -52,7 +52,7 @@ func UserCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	session, err := ksel.CurrentSession()
+	managedConfig, err := ksel.GetManagedKubeconfig()
 	if err != nil {
 		return err
 	}
@@ -74,10 +74,10 @@ func UserCommandMain(cmd *cobra.Command, args []string) error {
 	}
 
 	// Apply the user.
-	session.SetAuthInfoName(desired)
-	err = session.Save()
+	managedConfig.SetAuthInfoName(desired)
+	err = managedConfig.Save()
 	if err != nil {
-		return fmt.Errorf("error saving session: %w", err)
+		return fmt.Errorf("error updating kubeconfig: %w", err)
 	}
 
 	return nil

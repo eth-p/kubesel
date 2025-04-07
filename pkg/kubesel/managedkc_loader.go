@@ -9,11 +9,11 @@ import (
 	"github.com/eth-p/kubesel/pkg/kubeconfig/loader"
 )
 
-func newSessionFromLoadedKubeconfig(kc *loader.LoadedKubeconfig) (*Session, error) {
+func newManagedKubeconfigFromExistingKubeconfig(kc *loader.LoadedKubeconfig) (*ManagedKubeconfig, error) {
 	if len(kc.Errors) > 0 {
 		return nil, fmt.Errorf(
 			"%w: %s: %w",
-			ErrSessionCorrupt,
+			ErrManagedKubeconfigCorrupt,
 			kc.Path,
 			errors.Join(kc.Errors...),
 		)
@@ -28,14 +28,14 @@ func newSessionFromLoadedKubeconfig(kc *loader.LoadedKubeconfig) (*Session, erro
 	if kcCurrentContext == "" {
 		return nil, fmt.Errorf(
 			"%w: the current-context is unset",
-			ErrSessionCorrupt,
+			ErrManagedKubeconfigCorrupt,
 		)
 	}
 
 	if kcCurrentContext != managedContextName {
 		return nil, fmt.Errorf(
 			"%w: the current-context is not managed by kubesel",
-			ErrSessionCorrupt,
+			ErrManagedKubeconfigCorrupt,
 		)
 	}
 
@@ -44,7 +44,7 @@ func newSessionFromLoadedKubeconfig(kc *loader.LoadedKubeconfig) (*Session, erro
 	if kcContext == nil {
 		return nil, fmt.Errorf(
 			"%w: the %q context is missing",
-			ErrSessionCorrupt,
+			ErrManagedKubeconfigCorrupt,
 			kcCurrentContext,
 		)
 	}
@@ -54,7 +54,7 @@ func newSessionFromLoadedKubeconfig(kc *loader.LoadedKubeconfig) (*Session, erro
 	if rawExt == nil {
 		return nil, fmt.Errorf(
 			"%w: the %q extension is missing",
-			ErrSessionCorrupt,
+			ErrManagedKubeconfigCorrupt,
 			managedExtensionName,
 		)
 	}
@@ -62,7 +62,7 @@ func newSessionFromLoadedKubeconfig(kc *loader.LoadedKubeconfig) (*Session, erro
 	if !rawExt.Is(kcextApiVersion, kcextManagedByKubeselKind) {
 		return nil, fmt.Errorf(
 			"%w: the %q extension has the wrong apiVersion or kind",
-			ErrSessionCorrupt,
+			ErrManagedKubeconfigCorrupt,
 			managedExtensionName,
 		)
 	}
@@ -72,21 +72,21 @@ func newSessionFromLoadedKubeconfig(kc *loader.LoadedKubeconfig) (*Session, erro
 	if err != nil {
 		return nil, fmt.Errorf(
 			"%w: could not decode %s: %w",
-			ErrSessionCorrupt,
+			ErrManagedKubeconfigCorrupt,
 			kcextManagedByKubeselKind,
 			err,
 		)
 	}
 
-	return &Session{
+	return &ManagedKubeconfig{
 		file:    kc.Path,
 		config:  &kc.Config,
 		context: kcContext,
-		owner:   ext.SessionOwner,
+		owner:   ext.Owner,
 	}, nil
 }
 
-func newSessionForOwner(sessionFile string, owner SessionOwner) (*Session, error) {
+func newManagedKubeconfig(sessionFile string, owner Owner) (*ManagedKubeconfig, error) {
 	kcContext := &kubeconfig.Context{
 		Cluster:   new(string),
 		User:      new(string),
@@ -95,7 +95,7 @@ func newSessionForOwner(sessionFile string, owner SessionOwner) (*Session, error
 
 	// Create the ManagedByKubsel extension for the kubeconfig.
 	ext := kcextManagedByKubesel{
-		SessionOwner: owner,
+		Owner: owner,
 	}
 
 	extRaw := &kubeconfig.Extension{
@@ -129,7 +129,7 @@ func newSessionForOwner(sessionFile string, owner SessionOwner) (*Session, error
 	}
 
 	// Return the
-	return &Session{
+	return &ManagedKubeconfig{
 		file:    sessionFile,
 		owner:   owner,
 		context: kcContext,

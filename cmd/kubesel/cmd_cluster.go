@@ -47,7 +47,7 @@ func ClusterCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	session, err := ksel.CurrentSession()
+	managedConfig, err := ksel.GetManagedKubeconfig()
 	if err != nil {
 		return err
 	}
@@ -68,10 +68,10 @@ func ClusterCommandMain(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unknown cluster: %v", desired)
 	}
 
-	session.SetClusterName(desired)
-	err = session.Save()
+	managedConfig.SetClusterName(desired)
+	err = managedConfig.Save()
 	if err != nil {
-		return fmt.Errorf("error saving session: %w", err)
+		return fmt.Errorf("error updating kubeconfig: %w", err)
 	}
 
 	return nil
