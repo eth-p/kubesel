@@ -38,7 +38,7 @@ running `kubectl delete` on that cluster from your other pane.
  - [x] Use fzf-based UI to select context/user/cluster when none provided.
  - [x] Use fzf-based to fuzzily match clusters, showing a UI for multiple matches.
  - [x] Init script for `fish`
- - [ ] Init script for `bash`
+ - [x] Init script for `bash`
  - [ ] Init script for `zsh`
  - [ ] Shell completions for `fish`
  - [ ] Shell completions for `zsh`

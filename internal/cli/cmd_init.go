@@ -27,12 +27,16 @@ var InitCommand = cobra.Command{
 		the current shell.
 	`,
 	Example: `
+		# bash
+		source <(kubesel init bash)
+
 		# fish
 		kubesel init fish | source
 	`,
 
 	Args: cobra.ExactArgs(1),
 	ValidArgs: []string{
+		"bash",
 		"fish",
 	},
 }
