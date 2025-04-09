@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"al.essio.dev/pkg/shellescape"
 	"github.com/eth-p/kubesel/pkg/kubesel"
@@ -86,6 +87,12 @@ func InitCommandMain(cmd *cobra.Command, args []string) error {
 		initScript,
 		[]byte("@@KUBESEL@@"),
 		[]byte(shellescape.Quote(os.Args[0])),
+	)
+
+	templatedInitScript = bytes.ReplaceAll(
+		templatedInitScript,
+		[]byte("@@KUBESEL_BASENAME@@"),
+		[]byte(shellescape.Quote(filepath.Base(os.Args[0]))),
 	)
 
 	cmd.OutOrStdout().Write(templatedInitScript)

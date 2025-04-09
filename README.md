@@ -40,8 +40,9 @@ running `kubectl delete` on that cluster from your other pane.
  - [x] Init script for `fish`
  - [x] Init script for `bash`
  - [x] Init script for `zsh`
- - [ ] Shell completions for `fish`
- - [ ] Shell completions for `zsh`
+ - [x] Shell completions for `fish`
+ - [x] Shell completions for `bash`
+ - [x] Shell completions for `zsh`
  - [ ] Better error handling
  - [ ] Terminal colors
  - [ ] Automatic detection of terminal color support
