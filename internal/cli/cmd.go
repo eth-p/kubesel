@@ -11,6 +11,10 @@ import (
 // Command is the root `kubesel` command.
 var Command = cobra.Command{
 	Use: "kubesel",
+
+	CompletionOptions: cobra.CompletionOptions{
+		HiddenDefaultCmd: initScriptLoadsCompletions,
+	},
 }
 
 var GlobalOptions struct {

@@ -9,6 +9,7 @@ end
 
 __kubesel_init
 
+{{- if .load_completions }}
 # Load completions.
 function __kubesel_load_completions
     functions -e __kubesel_load_completions
@@ -18,3 +19,4 @@ function __kubesel_load_completions
 end
 
 __kubesel_load_completions
+{{- end }}

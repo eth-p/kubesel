@@ -140,3 +140,10 @@ https://github.com/eth-p/fish-kubeswitch
  - ✅ Shell completions.
  - ⚠️ Only supports [fish shell](https://fishshell.com/).
  - ⚠️ Wraps kubectl as a shell function.
+
+## Packaging
+
+### Go Build Tags
+
+ - **`no_init_completions`**  
+   Removes shell completion loading from the `kubesel init` scripts.

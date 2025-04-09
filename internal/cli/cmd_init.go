@@ -18,6 +18,10 @@ import (
 //go:embed shell-init/init.*
 var initScripts embed.FS
 
+// initScriptLoadsCompletions is set to `false` when using the
+// `no-init-completions` go build tag.
+var initScriptLoadsCompletions = true
+
 // InitCommand describes the subcommand for creating a new kubesel session.
 var InitCommand = cobra.Command{
 	RunE: InitCommandMain,
@@ -118,9 +122,10 @@ func getInitScript(argv0 string, shell string) (string, error) {
 
 	// Evaluate the template.
 	var sb strings.Builder
-	err = tpl.Execute(&sb, map[string]string{
+	err = tpl.Execute(&sb, map[string]any{
 		"kubesel_executable": argv0,
 		"kubesel_name":       filepath.Base(argv0),
+		"load_completions":   initScriptLoadsCompletions,
 	})
 
 	if err != nil {

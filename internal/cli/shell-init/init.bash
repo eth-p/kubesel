@@ -11,6 +11,7 @@ __kubesel_init() {
 
 __kubesel_init
 
+{{- if .load_completions }}
 # Load completions.
 __kubesel_load_completions() {
     unset -f __kubesel_load_completions
@@ -20,3 +21,4 @@ __kubesel_load_completions() {
 }
 
 __kubesel_load_completions
+{{- end }}
