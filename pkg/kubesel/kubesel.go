@@ -58,6 +58,16 @@ func (k *Kubesel) GetMergedKubeconfig() *kubeconfig.Config {
 	return k.kubeconfigs.Merged
 }
 
+// GetKubeconfigFilePaths returns the list of kubeconfig files specified by the
+// `KUBECONFIG` environment variable.
+func (k *Kubesel) GetKubeconfigFilePaths() []string {
+	files := make([]string, len(k.kubeconfigs.Configs))
+	for i, kc := range k.kubeconfigs.Configs {
+		files[i] = kc.Path
+	}
+	return files
+}
+
 // GetManagedKubeconfig returns the current [ManagedKubeconfig], if one exists.
 // If one does not exist, this returns [ErrUnmanaged].
 //

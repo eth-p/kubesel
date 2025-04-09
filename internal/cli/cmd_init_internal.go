@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
@@ -17,7 +19,7 @@ var internalInitCommand = cobra.Command{
 	Short: "Create a new kubesel session file",
 	Example: `
 		# fish
-		set -x KUBECONFIG (kubesel __init --pid=$fish_pid):"$KUBECONFIG"
+		set -x KUBECONFIG (kubesel __init --pid=$fish_pid)
 	`,
 
 	Args: cobra.NoArgs,
@@ -54,7 +56,7 @@ func internalInitCommandMain(cmd *cobra.Command, args []string) error {
 		os.Exit(2)
 	}
 
-	// Create the managed kubeconfig and print the resulting file to stdout.
+	// Create the managed kubeconfig.
 	owner, err := kubesel.OwnerForProcess(internalInitCommandOptions.OwnerPID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "kubesel error creating managed kubeconfig: %v\n", err)
@@ -73,6 +75,15 @@ func internalInitCommandMain(cmd *cobra.Command, args []string) error {
 		os.Exit(2)
 	}
 
-	fmt.Fprintf(os.Stdout, "%s\n", managedKubeconfig.Path())
+	// Print the updated KUBECONFIG.
+	var newKubeconfigVar strings.Builder
+	newKubeconfigVar.WriteString(managedKubeconfig.Path())
+
+	for _, kcPath := range ksel.GetKubeconfigFilePaths() {
+		newKubeconfigVar.WriteRune(filepath.ListSeparator)
+		newKubeconfigVar.WriteString(kcPath)
+	}
+
+	fmt.Fprintf(os.Stdout, "%s\n", newKubeconfigVar.String())
 	return nil
 }

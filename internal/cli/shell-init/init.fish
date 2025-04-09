@@ -1,7 +1,7 @@
 function __kubesel_init
-    set -l session_file (@@KUBESEL@@ __init --pid=$fish_pid)
+    set -l new_kubeconfig (@@KUBESEL@@ __init --pid=$fish_pid)
     if test $status -eq 0
-        set -x KUBECONFIG "$KUBECONFIG:$session_file"
+        set -x KUBECONFIG "$new_kubeconfig"
     end
 end
 __kubesel_init
