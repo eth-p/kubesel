@@ -30,6 +30,9 @@ var InitCommand = cobra.Command{
 		# bash
 		source <(kubesel init bash)
 
+		# bash
+		source <(kubesel init zsh)
+
 		# fish
 		kubesel init fish | source
 	`,
@@ -38,6 +41,7 @@ var InitCommand = cobra.Command{
 	ValidArgs: []string{
 		"bash",
 		"fish",
+		"zsh",
 	},
 }
 
