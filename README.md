@@ -49,6 +49,7 @@ running `kubectl delete` on that cluster from your other pane.
  - [ ] Install from nix flakes
  - [ ] Install from GitHub releases
  - [ ] Safety kubeconfig file
+ - [x] Manpages
 
 **Developer Experience:**
 
