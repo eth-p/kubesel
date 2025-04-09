@@ -3,66 +3,39 @@ package main
 import (
 	"os"
 	"runtime/debug"
-	"sync"
 
-	"github.com/eth-p/kubesel/pkg/kubesel"
-	"github.com/spf13/cobra"
+	"github.com/eth-p/kubesel/internal/cli"
 )
 
-// Command is the root `kubesel` command.
-var Command = cobra.Command{
-	Use: "kubesel",
-}
-
-var GlobalOptions struct {
-	Color bool
-}
-
-// _VERSION is defined by a go build tag.
-// If not empty, this will be returned as the version of kubesel.
-var _VERSION string
-
-var Kubesel = sync.OnceValues(kubesel.NewKubesel)
-
-func init() {
-	Command.AddGroup(&cobra.Group{
-		ID:    "Info",
-		Title: "Informational Commands:",
-	})
-
-	Command.AddGroup(&cobra.Group{
-		ID:    "Kubeconfig",
-		Title: "Kubeconfig Commands:",
-	})
-
-	Command.AddGroup(&cobra.Group{
-		ID:    "Kubesel",
-		Title: "Kubesel Commands:",
-	})
-
-	Command.PersistentFlags().BoolVar(
-		&GlobalOptions.Color,
-		"color",
-		true, // TODO: auto
-		"Print with colors",
-	)
-
-	Command.Version = _VERSION
-	if Command.Version == "" {
-		if buildinfo, ok := debug.ReadBuildInfo(); ok {
-			Command.Version = buildinfo.Main.Version
-		} else {
-			Command.Version = "unknown"
-		}
-	}
-}
+// THIS FILE IS ONLY A PROGRAM ENTRYPOINT.
+//
+// The kubesel command-line is implemented by the `internal/cli` package.
+// We can't implement it here as part of `main` because we need to be able
+// to access the cobra.Command structs for manpage generation.
 
 func main() {
-	cmd, err := Command.ExecuteC()
-	if err == nil {
-		return
+	exitcode, _ := cli.Run(os.Args[1:])
+	os.Exit(exitcode)
+}
+
+func init() {
+	cli.Command.Version = VERSION
+}
+
+// VERSION is defined by a go build flag.
+// If empty, the build info provided by the Go compiler will be used instead.
+var VERSION string
+
+func GetVersion() string {
+	if VERSION != "" {
+		return VERSION
 	}
 
-	_ = cmd
-	os.Exit(1)
+	if buildinfo, ok := debug.ReadBuildInfo(); ok {
+		VERSION = buildinfo.Main.Version
+	} else {
+		VERSION = "unknown"
+	}
+
+	return VERSION
 }
