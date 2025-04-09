@@ -1,19 +1,21 @@
 package cli
 
 import (
-	"bytes"
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
+	"text/template"
 
 	"al.essio.dev/pkg/shellescape"
 	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
 
-//go:embed shell-init/*
+//go:embed shell-init/init.*
 var initScripts embed.FS
 
 // InitCommand describes the subcommand for creating a new kubesel session.
@@ -67,11 +69,6 @@ func InitCommandMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	initScript, err := initScripts.ReadFile("shell-init/init." + args[0])
-	if err != nil {
-		return fmt.Errorf("unsupported shell: %s", args[0])
-	}
-
 	managedKubeconfig, err := ksel.GetManagedKubeconfig()
 	if !errors.Is(err, kubesel.ErrUnmanaged) {
 		if InitCommandOptions.InheritExisting {
@@ -81,20 +78,54 @@ func InitCommandMain(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("already managing kubeconfig: %s", managedKubeconfig.Path())
 	}
 
-	// Replace `@@KUBESEL@@` with quoted path to kubesel executable and print
-	// it to standard out.
-	templatedInitScript := bytes.ReplaceAll(
-		initScript,
-		[]byte("@@KUBESEL@@"),
-		[]byte(shellescape.Quote(os.Args[0])),
-	)
+	// Parse the init script as a Go template.
+	initScript, err := getInitScript(os.Args[0], args[0])
+	if err != nil {
+		return err
+	}
 
-	templatedInitScript = bytes.ReplaceAll(
-		templatedInitScript,
-		[]byte("@@KUBESEL_BASENAME@@"),
-		[]byte(shellescape.Quote(filepath.Base(os.Args[0]))),
-	)
+	// Print it to standard out.
+	_, err = io.WriteString(cmd.OutOrStdout(), initScript)
+	if err != nil {
+		return fmt.Errorf("failed to print shell init script: %w", err)
+	}
 
-	cmd.OutOrStdout().Write(templatedInitScript)
 	return nil
+}
+
+// getInitScript generates the init script for the specified shell.
+//
+// Supported shells are:
+//   - bash
+//   - fish
+//   - zsh
+func getInitScript(argv0 string, shell string) (string, error) {
+	templateSource, err := initScripts.ReadFile("shell-init/init." + shell)
+	if err != nil {
+		return "", fmt.Errorf("unsupported shell: %s", shell)
+	}
+
+	// Parse the script as a Go template.
+	tpl := template.New("init-script").
+		Funcs(template.FuncMap{
+			"shellquote": shellescape.Quote,
+		})
+
+	tpl, err = tpl.Parse(string(templateSource))
+	if err != nil {
+		return "", fmt.Errorf("failed to parse %s init script as template: %w", shell, err)
+	}
+
+	// Evaluate the template.
+	var sb strings.Builder
+	err = tpl.Execute(&sb, map[string]string{
+		"kubesel_executable": argv0,
+		"kubesel_name":       filepath.Base(argv0),
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to evaluate %s init script template: %w", shell, err)
+	}
+
+	return sb.String(), nil
 }
