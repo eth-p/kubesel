@@ -41,10 +41,10 @@ var UserCommandOptions struct {
 
 func init() {
 	RootCommand.AddCommand(&userCommand)
-	createManagedPropertyCommands(&userCommand, managedProperty[UserListItem]{
+	createManagedPropertyCommands(&userCommand, managedProperty[userInfo]{
 		PropertyNameSingular: "user",
 		PropertyNamePlural:   "users",
-		ListGenerator:        UserListItemIter,
+		GetItemInfos:         userInfoIter,
 		GetItemNames:         userNames,
 		Switch:               userSwitchImpl,
 	})
@@ -64,27 +64,27 @@ func userNames() ([]string, error) {
 	return kubesel.GetAuthInfoNames(), nil
 }
 
-type UserListItem struct {
+type userInfo struct {
 	Name         *string `yaml:"name" printer:"Name,order=0"`
 	AuthProvider string  `yaml:"auth-provider" printer:"Auth Provider,order=1"`
 }
 
-func UserListItemIter() (iter.Seq[UserListItem], error) {
+func userInfoIter() (iter.Seq[userInfo], error) {
 	kubesel, err := Kubesel()
 	if err != nil {
 		return nil, err
 	}
 
-	return func(yield func(UserListItem) bool) {
-		for _, user := range kubesel.GetMergedKubeconfig().AuthInfos {
-			userInfo := user.User
-			if userInfo == nil {
-				userInfo = &kubeconfig.AuthInfo{}
+	return func(yield func(userInfo) bool) {
+		for _, kcNamedUser := range kubesel.GetMergedKubeconfig().AuthInfos {
+			kcUser := kcNamedUser.User
+			if kcUser == nil {
+				kcUser = &kubeconfig.AuthInfo{}
 			}
 
-			item := UserListItem{
-				Name:         user.Name,
-				AuthProvider: summarizeAuthProvider(userInfo),
+			item := userInfo{
+				Name:         kcNamedUser.Name,
+				AuthProvider: summarizeAuthProvider(kcUser),
 			}
 
 			if !yield(item) {
@@ -94,19 +94,19 @@ func UserListItemIter() (iter.Seq[UserListItem], error) {
 	}, nil
 }
 
-func summarizeAuthProvider(userInfo *kubeconfig.AuthInfo) string {
-	if userInfo == nil {
+func summarizeAuthProvider(kcUser *kubeconfig.AuthInfo) string {
+	if kcUser == nil {
 		return ""
 	}
 
 	// Auth provider:
-	if userInfo.AuthProvider != nil && userInfo.AuthProvider.Name != nil {
-		authType := *userInfo.AuthProvider.Name
+	if kcUser.AuthProvider != nil && kcUser.AuthProvider.Name != nil {
+		authType := *kcUser.AuthProvider.Name
 		switch authType {
 
 		// OIDC:
 		case "oidc":
-			issuer, ok := userInfo.AuthProvider.Config["idp-issuer-url"]
+			issuer, ok := kcUser.AuthProvider.Config["idp-issuer-url"]
 			if ok {
 				issuerUrl, err := url.Parse(issuer)
 				if err != nil {
@@ -123,14 +123,14 @@ func summarizeAuthProvider(userInfo *kubeconfig.AuthInfo) string {
 	}
 
 	// Plug-in auth type:
-	if userInfo.Exec != nil && userInfo.Exec.Command != nil {
-		command, _, _ := strings.Cut(*userInfo.Exec.Command, " ")
+	if kcUser.Exec != nil && kcUser.Exec.Command != nil {
+		command, _, _ := strings.Cut(*kcUser.Exec.Command, " ")
 		return command
 	}
 
 	// Basic auth type:
-	if userInfo.Username != nil {
-		return "basic (" + *userInfo.Username + ")"
+	if kcUser.Username != nil {
+		return "basic (" + *kcUser.Username + ")"
 	}
 
 	return ""

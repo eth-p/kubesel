@@ -16,7 +16,7 @@ import (
 type managedProperty[I any] struct {
 	PropertyNameSingular string
 	PropertyNamePlural   string
-	ListGenerator        listGenerator[I]
+	GetItemInfos         itemInfoGenerator[I]
 	GetItemNames         func() ([]string, error)
 
 	// Switch changes the active item of this managed property.
@@ -35,7 +35,7 @@ func (p *managedProperty[I]) upcast() *managedProperty[any] {
 		PropertyNamePlural:   p.PropertyNamePlural,
 		Aliases:              p.Aliases,
 		InfoStructType:       p.InfoStructType,
-		ListGenerator:        p.ListGenerator.upcast(),
+		GetItemInfos:         p.GetItemInfos.upcast(),
 		GetItemNames:         p.GetItemNames,
 		Switch:               p.Switch,
 	}
@@ -166,11 +166,11 @@ func createCommandNameAndAliases(name string, prop *managedProperty[any]) (strin
 	return name, aliases
 }
 
-// listGenerator is a function that creates an iterator over some type.
+// itemInfoGenerator is a function that creates an iterator over some type.
 // This is used to get the items displayed by the `kubesel list` subcommand.
-type listGenerator[I any] func() (iter.Seq[I], error)
+type itemInfoGenerator[I any] func() (iter.Seq[I], error)
 
-func (g *listGenerator[I]) upcast() listGenerator[any] {
+func (g *itemInfoGenerator[I]) upcast() itemInfoGenerator[any] {
 	return func() (iter.Seq[any], error) {
 		realGenerator, err := (*g)()
 		if err != nil {

@@ -68,7 +68,7 @@ func generatedListCommandMain(prop *managedProperty[any], cmd *cobra.Command, ar
 	}
 
 	// Start iterating the items.
-	iter, err := prop.ListGenerator()
+	iter, err := prop.GetItemInfos()
 	if err != nil {
 		return fmt.Errorf("cannot list %s: %w", prop.PropertyNamePlural, err)
 	}

@@ -53,10 +53,10 @@ func init() {
 		"keep the current namespace",
 	)
 
-	createManagedPropertyCommands(&contextCommand, managedProperty[ContextListItem]{
+	createManagedPropertyCommands(&contextCommand, managedProperty[contextInfo]{
 		PropertyNameSingular: "context",
 		PropertyNamePlural:   "contexts",
-		ListGenerator:        ContextListItemIter,
+		GetItemInfos:         contextInfoIter,
 		GetItemNames:         contextNames,
 		Switch:               contextSwitchImpl,
 	})
@@ -84,20 +84,20 @@ func contextNames() ([]string, error) {
 	return kubesel.GetAuthInfoNames(), nil
 }
 
-type ContextListItem struct {
+type contextInfo struct {
 	Name      *string `yaml:"name" printer:"Name,order=0"`
 	Cluster   *string `yaml:"cluster" printer:"Cluster,order=1"`
 	User      *string `yaml:"user" printer:"User,order=2"`
 	Namespace *string `yaml:"namespace" printer:"Namespace,order=3"`
 }
 
-func ContextListItemIter() (iter.Seq[ContextListItem], error) {
+func contextInfoIter() (iter.Seq[contextInfo], error) {
 	ksel, err := Kubesel()
 	if err != nil {
 		return nil, err
 	}
 
-	return func(yield func(ContextListItem) bool) {
+	return func(yield func(contextInfo) bool) {
 		for _, kcNamedContext := range ksel.GetMergedKubeconfig().Contexts {
 			if kubesel.IsManagedContext(&kcNamedContext) {
 				continue
@@ -108,7 +108,7 @@ func ContextListItemIter() (iter.Seq[ContextListItem], error) {
 				kcContext = &kubeconfig.Context{}
 			}
 
-			item := ContextListItem{
+			item := contextInfo{
 				Name:      kcNamedContext.Name,
 				Cluster:   kcContext.Cluster,
 				User:      kcContext.User,

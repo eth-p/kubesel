@@ -41,10 +41,10 @@ var ClusterCommandOptions struct {
 
 func init() {
 	RootCommand.AddCommand(&clusterCommand)
-	createManagedPropertyCommands(&clusterCommand, managedProperty[ClusterListItem]{
+	createManagedPropertyCommands(&clusterCommand, managedProperty[clusterInfo]{
 		PropertyNameSingular: "cluster",
 		PropertyNamePlural:   "clusters",
-		ListGenerator:        ClusterListItemIter,
+		GetItemInfos:         clusterInfoIter,
 		GetItemNames:         clusterNames,
 		Switch:               clusterSwitchImpl,
 	})
@@ -64,29 +64,29 @@ func clusterNames() ([]string, error) {
 	return kubesel.GetClusterNames(), nil
 }
 
-type ClusterListItem struct {
+type clusterInfo struct {
 	Name     *string `yaml:"name" printer:"Name,order=1"`
 	Server   *string `yaml:"server" printer:"Server,order=2"`
 	ProxyURL *string `yaml:"proxy-url" printer:"Proxy URL,order=3,wide"`
 }
 
-func ClusterListItemIter() (iter.Seq[ClusterListItem], error) {
+func clusterInfoIter() (iter.Seq[clusterInfo], error) {
 	kubesel, err := Kubesel()
 	if err != nil {
 		return nil, err
 	}
 
-	return func(yield func(ClusterListItem) bool) {
-		for _, cluster := range kubesel.GetMergedKubeconfig().Clusters {
-			clusterInfo := cluster.Cluster
-			if clusterInfo == nil {
-				clusterInfo = &kubeconfig.Cluster{}
+	return func(yield func(clusterInfo) bool) {
+		for _, kcNamedCluster := range kubesel.GetMergedKubeconfig().Clusters {
+			kcCluster := kcNamedCluster.Cluster
+			if kcCluster == nil {
+				kcCluster = &kubeconfig.Cluster{}
 			}
 
-			item := ClusterListItem{
-				Name:     cluster.Name,
-				Server:   clusterInfo.Server,
-				ProxyURL: clusterInfo.ProxyURL,
+			item := clusterInfo{
+				Name:     kcNamedCluster.Name,
+				Server:   kcCluster.Server,
+				ProxyURL: kcCluster.ProxyURL,
 			}
 
 			if !yield(item) {
