@@ -42,13 +42,20 @@ var GlobalOptions struct {
 
 const (
 	colorFlagName = "color"
+	ExitCodeOK    = 0
+	ExitCodeError = 1
+	ExitCodeHelp  = 10
 )
 
 var (
 	// Kubesel is the global instance of [kubesel.Kubesel] used by all subcommands.
 	Kubesel = sync.OnceValues(kubesel.NewKubesel)
 
-	helpPrinter = sync.OnceValue(makeHelpPrinter)
+	// hasPrintedHelp is used to determine [ExitCodeHelp] should be returned.
+	// This is set when the help function is called via `--help` or
+	// `kubesel help`.
+	hasPrintedHelp = false
+	helpPrinter    = sync.OnceValue(makeHelpPrinter)
 )
 
 func init() {
@@ -75,6 +82,7 @@ func init() {
 
 	Command.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		helpPrinter().PrintCommandHelp(cmd, args)
+		hasPrintedHelp = true
 	})
 
 	Command.SetUsageFunc(func(cmd *cobra.Command) error {
@@ -120,10 +128,14 @@ func Run(args []string) (int, error) {
 		var sb strings.Builder
 		prepareErrorMessage(&sb, cmd, err)
 		io.WriteString(Command.ErrOrStderr(), sb.String()) //nolint:errcheck
-		return 1, err
+		return ExitCodeError, err
 	}
 
-	return 0, nil
+	if hasPrintedHelp {
+		return ExitCodeHelp, err
+	}
+
+	return ExitCodeOK, nil
 }
 
 func makeHelpPrinter() *cobraprint.HelpPrinter {

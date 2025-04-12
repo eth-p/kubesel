@@ -46,7 +46,7 @@ running `kubectl delete` on that cluster from your other pane.
  - [ ] Better error handling
  - [ ] Terminal colors
  - [x] Automatic detection of terminal color support
- - [ ] Consistent exit codes
+ - [x] Consistent exit codes
  - [ ] Install from nix flakes
  - [ ] Install from GitHub releases
  - [ ] Safety kubeconfig file
