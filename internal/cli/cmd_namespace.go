@@ -1,14 +1,16 @@
 package cli
 
 import (
-	"fmt"
+	"context"
+	"iter"
+	"strings"
+	"time"
 
+	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
 
 var namespaceCommand = cobra.Command{
-	RunE: NamespaceCommandMain,
-
 	Aliases: []string{
 		"names",
 		"nsp",
@@ -27,9 +29,6 @@ var namespaceCommand = cobra.Command{
 	Example: `
 		kubesel namespace kube-system  # full name
 	`,
-
-	Args:              cobra.ExactArgs(1),
-	ValidArgsFunction: nil,
 }
 
 var NamespaceCommandOptions struct {
@@ -37,26 +36,59 @@ var NamespaceCommandOptions struct {
 
 func init() {
 	RootCommand.AddCommand(&namespaceCommand)
+
+	createManagedPropertyCommands(&namespaceCommand, managedProperty[namespaceInfo]{
+		PropertyNameSingular: "namespace",
+		PropertyNamePlural:   "namespaces",
+		GetItemInfos:         namespaceInfoIter,
+		GetItemNames:         namespaceNames,
+		Switch:               namespaceSwitchImpl,
+	})
 }
 
-func NamespaceCommandMain(cmd *cobra.Command, args []string) error {
-	ksel, err := Kubesel()
+func namespaceSwitchImpl(ksel *kubesel.Kubesel, managedKc *kubesel.ManagedKubeconfig, target string) error {
+	managedKc.SetNamespace(target)
+	return managedKc.Save()
+}
+
+func namespaceNames() ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	// Get the namespaces using kubectl.
+	output, err := runKubectl(ctx, []string{"get", "namespace", "--output=name", "--no-headers", "--server-print"})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	managedConfig, err := ksel.GetManagedKubeconfig()
-	if err != nil {
-		return err
+	// Clean up the returned list.
+	namespaces := strings.Split(output, "\n")
+	for i, ns := range namespaces {
+		namespaces[i] = strings.TrimPrefix(strings.Trim(ns, " \t\r\n"), "namespace/")
 	}
 
-	// Apply the namespace.
-	managedConfig.SetNamespace(args[0])
+	return namespaces, nil
+}
 
-	err = managedConfig.Save()
+type namespaceInfo struct {
+	Name *string `yaml:"name" printer:"Name,order=1"`
+}
+
+func namespaceInfoIter() (iter.Seq[namespaceInfo], error) {
+	namespaces, err := namespaceNames()
 	if err != nil {
-		return fmt.Errorf("error updating kubeconfig: %w", err)
+		return nil, err
 	}
 
-	return nil
+	return func(yield func(namespaceInfo) bool) {
+		for _, namespace := range namespaces {
+			item := namespaceInfo{
+				Name: &namespace,
+			}
+
+			if !yield(item) {
+				return
+			}
+		}
+	}, nil
 }

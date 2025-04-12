@@ -26,7 +26,7 @@ running `kubectl delete` on that cluster from your other pane.
  - [x] Switch users with `kubesel user <user>`
  - [x] Switch clusters with `kubesel cluster <cluster>`
  - [x] Switch namespaces with `kubesel namespace <namespace>`
- - [ ] Listing namespaces with `kubesel list namespaces`
+ - [x] Listing namespaces with `kubesel list namespaces`
  - [ ] Automatically switch users with `kubesel cluster <clusters>`
  - [ ] Garbage collection of outdated/defunct session files
  - [ ] Automatic garbage collection
@@ -98,11 +98,12 @@ kubesel context my-context
 kubesel context my-context -n # keep the current namespace
 ```
 
-**View Contexts, Clusters, or Users:**
+**View Contexts, Clusters, Users, or Namespaces:**
 ```bash
 kubesel list clusters
 kubesel list contexts
 kubesel list users
+kubesel list namespaces
 ```
 
 ## Tips
