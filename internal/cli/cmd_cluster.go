@@ -38,11 +38,6 @@ var clusterCommand = cobra.Command{
 		kubesel cluster                     # fzf picker
 	`,
 
-	Annotations: map[string]string{
-		TypeNameAnnotation:       "cluster",
-		PluralTypeNameAnnotation: "clusters",
-	},
-
 	Args: cobra.RangeArgs(0, 1),
 }
 
@@ -51,7 +46,11 @@ var ClusterCommandOptions struct {
 
 func init() {
 	RootCommand.AddCommand(&clusterCommand)
-	CreateListerFor(&clusterCommand, ClusterListItemIter)
+	createManagedPropertyCommands(&clusterCommand, managedProperty[ClusterListItem]{
+		PropertyNameSingular: "cluster",
+		PropertyNamePlural:   "clusters",
+		ListGenerator:        ClusterListItemIter,
+	})
 }
 
 func clusterCommandMain(cmd *cobra.Command, args []string) error {

@@ -50,8 +50,8 @@ func init() {
 	)
 }
 
-func listCommandImpl(lister *lister, cmd *cobra.Command, args []string) error {
-	itemTyp, err := printer.ItemTypeOf(lister.itemType)
+func generatedListCommandMain(prop *managedProperty[any], cmd *cobra.Command, args []string) error {
+	itemTyp, err := printer.ItemTypeOf(prop.InfoStructType)
 	if err != nil {
 		return err
 	}
@@ -68,9 +68,9 @@ func listCommandImpl(lister *lister, cmd *cobra.Command, args []string) error {
 	}
 
 	// Start iterating the items.
-	iter, err := lister.itemGenerator()
+	iter, err := prop.ListGenerator()
 	if err != nil {
-		return fmt.Errorf("cannot list %s: %w", lister.typeNamePlural, err)
+		return fmt.Errorf("cannot list %s: %w", prop.PropertyNamePlural, err)
 	}
 
 	// Print the items.

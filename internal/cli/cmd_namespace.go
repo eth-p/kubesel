@@ -28,11 +28,6 @@ var namespaceCommand = cobra.Command{
 		kubesel namespace kube-system  # full name
 	`,
 
-	Annotations: map[string]string{
-		TypeNameAnnotation:       "namespace",
-		PluralTypeNameAnnotation: "namespaces",
-	},
-
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: nil,
 }
@@ -42,7 +37,6 @@ var NamespaceCommandOptions struct {
 
 func init() {
 	RootCommand.AddCommand(&namespaceCommand)
-	// CreateListerFor(&NamespaceCommand, NamespaceListItemIter)
 }
 
 func NamespaceCommandMain(cmd *cobra.Command, args []string) error {

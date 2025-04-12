@@ -38,10 +38,6 @@ var userCommand = cobra.Command{
 		kubesel cluster myclstr             # fuzzy match
 		kubesel cluster                     # fzf picker
 	`,
-	Annotations: map[string]string{
-		TypeNameAnnotation:       "user",
-		PluralTypeNameAnnotation: "users",
-	},
 
 	Args:              cobra.RangeArgs(0, 1),
 	ValidArgsFunction: nil,
@@ -52,7 +48,11 @@ var UserCommandOptions struct {
 
 func init() {
 	RootCommand.AddCommand(&userCommand)
-	CreateListerFor(&userCommand, UserListItemIter)
+	createManagedPropertyCommands(&userCommand, managedProperty[UserListItem]{
+		PropertyNameSingular: "user",
+		PropertyNamePlural:   "users",
+		ListGenerator:        UserListItemIter,
+	})
 }
 
 func userCommandMain(cmd *cobra.Command, args []string) error {

@@ -19,6 +19,7 @@ const (
 
 const (
 	colorFlagName = "color"
+	listFlagName  = "list"
 )
 
 // RootCommand is the root `kubesel` command.

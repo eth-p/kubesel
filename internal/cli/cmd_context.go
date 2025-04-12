@@ -44,11 +44,6 @@ var contextCommand = cobra.Command{
 		kubesel cluster                     # fzf picker
 	`,
 
-	Annotations: map[string]string{
-		TypeNameAnnotation:       "context",
-		PluralTypeNameAnnotation: "contexts",
-	},
-
 	Args:              cobra.RangeArgs(0, 1),
 	ValidArgsFunction: nil,
 }
@@ -66,7 +61,11 @@ func init() {
 		"keep the current namespace",
 	)
 
-	CreateListerFor(&contextCommand, ContextListItemIter)
+	createManagedPropertyCommands(&contextCommand, managedProperty[ContextListItem]{
+		PropertyNameSingular: "context",
+		PropertyNamePlural:   "contexts",
+		ListGenerator:        ContextListItemIter,
+	})
 }
 
 func contextCommandMain(cmd *cobra.Command, args []string) error {
