@@ -110,9 +110,13 @@ func (p *HelpPrinter) printCommandExample(cmd *cobra.Command) {
 		return
 	}
 
+	// Clean up the example string and indent it.
+	example := strings.Trim(dedent.Dedent(cmd.Example), "\n")
+	example = strings.ReplaceAll(example, "\n", "\n"+p.opts.Indent)
+
 	w := p.out
 	fmt.Fprintf(w, "\n%s\n", printer.ApplyColor(p.opts.HeadingColor, "Examples:"))
-	fmt.Fprintf(w, "%s\n", cmd.Example)
+	fmt.Fprintf(w, "%s%s\n", p.opts.Indent, example)
 }
 
 // printCommandExample prints the command's subcommands.
@@ -213,139 +217,8 @@ func (p *HelpPrinter) printCommandFlags(cmd *cobra.Command) {
 			fmt.Fprintf(w, " (default %s)", flag.Default)
 		}
 
-		_ = width
 		fmt.Fprintln(w)
 	}
-	// // Get all the flags.
-	// var flags []*pflag.Flag
-	// var flagShortColWidth = 0
-	// var flagLongColWidth = 0
-
-	// visitFlag := func(f *pflag.Flag) {
-	// 	if f.Hidden {
-	// 		return
-	// 	}
-
-	// 	flags = append(flags, f)
-
-	// 	// Calculate long width.
-	// 	name, usage := pflag.UnquoteUsage()
-	// 	usageWidth := runewidth.StringWidth(f.Usage)
-	// 	longWidth := runewidth.StringWidth(f.Name)
-	// 	if longWidth > flagLongColWidth {
-	// 		flagLongColWidth = longWidth
-	// 	}
-
-	// 	// Calculate short width.
-	// 	shortWidth := runewidth.StringWidth(f.Shorthand)
-	// 	if shortWidth > flagShortColWidth {
-	// 		flagShortColWidth = shortWidth
-	// 	}
-	// }
-
-	// cmd.LocalFlags().VisitAll(visitFlag)
-	// cmd.InheritedFlags().VisitAll(visitFlag)
-
-	// // Sort the flags alphabetically.
-	// slices.SortFunc(flags, func(a, b *pflag.Flag) int {
-	// 	return strings.Compare(a.Name, b.Name)
-	// })
-
-	// // Print them.
-	// noShortFlagPadding := makePadding("", flagShortColWidth)
-	// for _, flag := range flags {
-	// 	fmt.Fprint(w, "  ")
-
-	// 	// Print the flag shorthand.
-	// 	if flag.Shorthand == "" && flagShortColWidth != 0 {
-	// 		fmt.Fprintf(w, "%s   ", noShortFlagPadding)
-	// 	} else {
-	// 		fmt.Fprintf(w, "%s%s, ",
-	// 			theme.FlagName("-"+flag.Shorthand),
-	// 			makePadding(flag.Shorthand, flagShortColWidth),
-	// 		)
-	// 	}
-
-	// 	// Print the flag name and description.
-	// 	fmt.Fprintf(w, "%s%s  %s",
-	// 		theme.FlagName("--"+flag.Name),
-	// 		makePadding(flag.Name, flagLongColWidth),
-	// 		flag.Usage,
-	// 	)
-
-	// 	// Print the default value.
-
-	// 	fmt.Fprintln(w)
-	// }
-
-	// buf := new(bytes.Buffer)
-
-	// lines := make([]string, 0, len(f.formal))
-
-	// maxlen := 0
-	// f.VisitAll(func(flag *Flag) {
-	// 	if flag.Hidden {
-	// 		return
-	// 	}
-
-	// 	line := ""
-	// 	if flag.Shorthand != "" && flag.ShorthandDeprecated == "" {
-	// 		line = fmt.Sprintf("  -%s, --%s", flag.Shorthand, flag.Name)
-	// 	} else {
-	// 		line = fmt.Sprintf("      --%s", flag.Name)
-	// 	}
-
-	// 	varname, usage := UnquoteUsage(flag)
-	// 	if varname != "" {
-	// 		line += " " + varname
-	// 	}
-	// 	if flag.NoOptDefVal != "" {
-	// 		switch flag.Value.Type() {
-	// 		case "string":
-	// 			line += fmt.Sprintf("[=\"%s\"]", flag.NoOptDefVal)
-	// 		case "bool":
-	// 			if flag.NoOptDefVal != "true" {
-	// 				line += fmt.Sprintf("[=%s]", flag.NoOptDefVal)
-	// 			}
-	// 		case "count":
-	// 			if flag.NoOptDefVal != "+1" {
-	// 				line += fmt.Sprintf("[=%s]", flag.NoOptDefVal)
-	// 			}
-	// 		default:
-	// 			line += fmt.Sprintf("[=%s]", flag.NoOptDefVal)
-	// 		}
-	// 	}
-
-	// 	// This special character will be replaced with spacing once the
-	// 	// correct alignment is calculated
-	// 	line += "\x00"
-	// 	if len(line) > maxlen {
-	// 		maxlen = len(line)
-	// 	}
-
-	// 	line += usage
-	// 	if !flag.defaultIsZeroValue() {
-	// 		if flag.Value.Type() == "string" {
-	// 			line += fmt.Sprintf(" (default %q)", flag.DefValue)
-	// 		} else {
-	// 			line += fmt.Sprintf(" (default %s)", flag.DefValue)
-	// 		}
-	// 	}
-	// 	if len(flag.Deprecated) != 0 {
-	// 		line += fmt.Sprintf(" (DEPRECATED: %s)", flag.Deprecated)
-	// 	}
-
-	// 	lines = append(lines, line)
-	// })
-
-	// for _, line := range lines {
-	// 	sidx := strings.Index(line, "\x00")
-	// 	spacing := strings.Repeat(" ", maxlen-sidx)
-	// 	// maxlen + 2 comes from + 1 for the \x00 and + 1 for the (deliberate) off-by-one in maxlen-sidx
-	// 	fmt.Fprintln(buf, line[:sidx], spacing, wrap(maxlen+2, cols, line[sidx+1:]))
-	// }
-
-	// return buf.String()
 }
 
 func gatherFlagsInfo(cmd *cobra.Command) flagsInfo {
@@ -379,23 +252,6 @@ func gatherFlagsInfo(cmd *cobra.Command) flagsInfo {
 			flagInfo.Default = f.DefValue
 			flagInfo.DefaultWidth = runewidth.StringWidth(f.DefValue)
 		}
-
-		// if f.NoOptDefVal != "" {
-		// 	switch f.Value.Type() {
-		// 	case "string":
-		// 		line += fmt.Sprintf("[=\"%s\"]", f.NoOptDefVal)
-		// 	case "bool":
-		// 		if flag.NoOptDefVal != "true" {
-		// 			line += fmt.Sprintf("[=%s]", flag.NoOptDefVal)
-		// 		}
-		// 	case "count":
-		// 		if flag.NoOptDefVal != "+1" {
-		// 			line += fmt.Sprintf("[=%s]", flag.NoOptDefVal)
-		// 		}
-		// 	default:
-		// 		line += fmt.Sprintf("[=%s]", flag.NoOptDefVal)
-		// 	}
-		// }
 
 		flags.Flags = append(flags.Flags, flagInfo)
 		flags.MaxNameWidth = maxInt(flags.MaxNameWidth, flagInfo.NameWidth)

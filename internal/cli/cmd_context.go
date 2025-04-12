@@ -24,10 +24,24 @@ var ContextCommand = cobra.Command{
 	Use:     "context [name]",
 	GroupID: "Kubeconfig",
 
-	Short: "Change the current context",
+	Short: "Change to a different cluster, user, and namespace",
 	Long: `
+		Change the current cluster, user, and namespace to the ones
+		specified in a context.
+
+		When selecting a context, you can use its full name as it
+		appears in 'kubesel list contexts' or a fuzzy match of
+		its name. If no context is specified or if the specified
+		name fuzzily matches multiple contexts, a fzf picker will
+		be opened.
+
+		If the context does not specify a namespace the current
+		namespace will be kept.
 	`,
 	Example: `
+		kubesel cluster my.cluster.example  # full name
+		kubesel cluster myclstr             # fuzzy match
+		kubesel cluster                     # fzf picker
 	`,
 
 	Annotations: map[string]string{

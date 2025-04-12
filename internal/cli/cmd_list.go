@@ -20,9 +20,18 @@ var ListCommand = cobra.Command{
 	Use:     "list",
 	GroupID: "Info",
 
-	Short: "Show from kubeconfig files",
+	Short: "List info from kubeconfig files",
 	Long: `
-		Display information contained inside your kubeconfig files.
+		List info from your kubeconfig files.
+
+		Available output formats are:
+		  list   (print only the names as a list)
+		  table  (print as a table)
+		  cols   (print as columns)
+
+		With the table and column formats, the printed columns and
+		their order can be changed by by appending '=COL1,COL2' to
+		to the output format (e.g. '--output table=name,cluster').
 	`,
 
 	Args: cobra.NoArgs,
@@ -37,7 +46,7 @@ func init() {
 	ListCommand.PersistentFlags().VarP(
 		&ListCommandOptions.OutputFormat,
 		"output", "o",
-		"The format to print listed info",
+		"output format",
 	)
 }
 

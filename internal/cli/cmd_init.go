@@ -30,14 +30,14 @@ var InitCommand = cobra.Command{
 
 	Short: "Initialize kubesel in the current shell",
 	Long: `
-		Generate a shell script that when sourced, will initialize kubesel in
-		the current shell.
+		Generate a shell script that when sourced, will initialize
+		kubesel in the current shell.
 	`,
 	Example: `
 		# bash
 		source <(kubesel init bash)
 
-		# bash
+		# zsh
 		source <(kubesel init zsh)
 
 		# fish

@@ -18,10 +18,14 @@ var NamespaceCommand = cobra.Command{
 	Use:     "namespace namespace",
 	GroupID: "Kubeconfig",
 
-	Short: "Change the current namespace",
+	Short: "Change to a different namespace",
 	Long: `
+		Change to a different Kubernetes namespace in the current shell.
+
+		When selecting a namespace, you must use its full name.
 	`,
 	Example: `
+		kubesel namespace kube-system  # full name
 	`,
 
 	Annotations: map[string]string{

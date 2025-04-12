@@ -20,9 +20,23 @@ var ClusterCommand = cobra.Command{
 	Use:     "cluster [name]",
 	GroupID: "Kubeconfig",
 
-	Short:   "Change the current cluster",
-	Long:    "",
-	Example: "",
+	Short: "Change to a different cluster",
+	Long: `
+		Change to a different Kubernetes cluster in the current shell.
+
+		When selecting a cluster, you can use its full name as it
+		appears in 'kubesel list clusters' or a fuzzy match of
+		its name. If no cluster is specified or if the specified
+		name fuzzily matches multiple clusters, a fzf picker will
+		be opened.
+
+		Note: You may need to change the user as well.
+	`,
+	Example: `
+		kubesel cluster my.cluster.example  # full name
+		kubesel cluster myclstr             # fuzzy match
+		kubesel cluster                     # fzf picker
+	`,
 
 	Annotations: map[string]string{
 		TypeNameAnnotation:       "cluster",

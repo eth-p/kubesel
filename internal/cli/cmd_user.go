@@ -23,12 +23,21 @@ var UserCommand = cobra.Command{
 	Use:     "user [name]",
 	GroupID: "Kubeconfig",
 
-	Short: "Change the current user",
+	Short: "Change to a different user",
 	Long: `
+		Change to a different Kubernetes auth user in the current shell.
+
+		When selecting a user, you can use its full name as it
+		appears in 'kubesel list users' or a fuzzy match of its
+		name. If no user is specified or if the specified name
+		fuzzily matches multiple users, a fzf picker will be
+		opened.
 	`,
 	Example: `
+		kubesel cluster my.cluster.example  # full name
+		kubesel cluster myclstr             # fuzzy match
+		kubesel cluster                     # fzf picker
 	`,
-
 	Annotations: map[string]string{
 		TypeNameAnnotation:       "user",
 		PluralTypeNameAnnotation: "users",
