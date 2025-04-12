@@ -1,9 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
-	"github.com/eth-p/kubesel/internal/printer"
 	"github.com/spf13/cobra"
 )
 
@@ -48,36 +45,4 @@ func init() {
 		"output", "o",
 		"output format",
 	)
-}
-
-func generatedListCommandMain(prop *managedProperty[any], cmd *cobra.Command, args []string) error {
-	itemTyp, err := printer.ItemTypeOf(prop.InfoStructType)
-	if err != nil {
-		return err
-	}
-
-	// Create the item printer.
-	ListCommandOptions.OutputFormat.DefaultIfUnset()
-	printer, err := ListCommandOptions.OutputFormat.newPrinter(
-		*itemTyp,
-		cmd.OutOrStdout(),
-	)
-
-	if err != nil {
-		return err
-	}
-
-	// Start iterating the items.
-	iter, err := prop.GetItemInfos()
-	if err != nil {
-		return fmt.Errorf("cannot list %s: %w", prop.PropertyNamePlural, err)
-	}
-
-	// Print the items.
-	for item := range iter {
-		printer.Add(item)
-	}
-
-	printer.Close()
-	return nil
 }
