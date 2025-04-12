@@ -106,6 +106,15 @@ func createManagedPropertySwitchCommand(cmd *cobra.Command, prop *managedPropert
 		return
 	}
 
+	// Flags.
+	var mustExactMatch bool
+	cmd.Flags().BoolVarP(&mustExactMatch,
+		"exact", "e",
+		false,
+		prop.PropertyNameSingular+" must be exact match",
+	)
+
+	// Command.
 	cmd.Args = cobra.RangeArgs(0, 1)
 	cmd.ValidArgsFunction = createManagedPropertyCompletionFunc(prop)
 
@@ -127,14 +136,23 @@ func createManagedPropertySwitchCommand(cmd *cobra.Command, prop *managedPropert
 		}
 
 		// Fuzzy match/pick based on the query (or lack thereof)
+		var desired string
 		query := ""
 		if len(args) > 0 {
 			query = args[0]
 		}
 
-		desired, err := fuzzy.MatchOneOrPick(available, query)
-		if err != nil {
-			return err
+		if mustExactMatch {
+			desired = query
+		} else {
+			desired, err = fuzzy.MatchOneOrPick(available, query)
+			if err != nil {
+				return err
+			}
+		}
+
+		if desired == "" {
+			return fmt.Errorf("no %s specified", prop.PropertyNameSingular)
 		}
 
 		// Safeguard.
