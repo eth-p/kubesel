@@ -107,7 +107,7 @@ func (k *Kubesel) CreateManagedKubeconfig(owner Owner) (*ManagedKubeconfig, erro
 	}
 
 	// Check if the managed kubeconfig file already exists.
-	managedFile := filepath.Join(k.sessionDir, owner.fileName())
+	managedFile := k.GetManagedKubeconfigPathForOwner(owner)
 	if _, err := os.Stat(managedFile); !errors.Is(err, os.ErrNotExist) {
 		return nil, fmt.Errorf("%w: owner pid %d", ErrAlreadyManaged, owner.Process)
 	}
@@ -126,16 +126,24 @@ func (k *Kubesel) CreateManagedKubeconfig(owner Owner) (*ManagedKubeconfig, erro
 	return managedConfig, nil
 }
 
+// IsManagedKubeconfigPath returns true if the file at the specified path
+// is managed by any instance of kubesel.
+func (k *Kubesel) IsManagedKubeconfigPath(path string) bool {
+	rel, err := filepath.Rel(k.sessionDir, path)
+	return err == nil && !strings.HasPrefix(rel, "..")
+}
+
+func (k *Kubesel) GetManagedKubeconfigPathForOwner(owner Owner) string {
+	return filepath.Join(k.sessionDir, owner.fileName())
+}
+
 // findManagedKubeconfig looks for the first loaded kubeconfig file found
 // within kubesel's session directory.
 func (k *Kubesel) findManagedKubeconfig() (*ManagedKubeconfig, error) {
 	for _, kc := range k.kubeconfigs.Configs {
-		rel, err := filepath.Rel(k.sessionDir, kc.Path)
-		if err != nil || strings.HasPrefix(rel, "..") {
-			continue
+		if k.IsManagedKubeconfigPath(kc.Path) {
+			return newManagedKubeconfigFromExistingKubeconfig(kc)
 		}
-
-		return newManagedKubeconfigFromExistingKubeconfig(kc)
 	}
 
 	return nil, ErrUnmanaged

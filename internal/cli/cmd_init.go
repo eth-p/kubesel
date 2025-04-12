@@ -2,7 +2,6 @@ package cli
 
 import (
 	"embed"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,7 +10,6 @@ import (
 	"text/template"
 
 	"al.essio.dev/pkg/shellescape"
-	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
 
@@ -53,35 +51,13 @@ var InitCommand = cobra.Command{
 }
 
 var InitCommandOptions struct {
-	InheritExisting bool
 }
 
 func init() {
 	Command.AddCommand(&InitCommand)
-
-	InitCommand.Flags().BoolVar(
-		&InitCommandOptions.InheritExisting,
-		"inherit-existing",
-		false,
-		"quietly exit if already managing kubeconfig",
-	)
 }
 
 func InitCommandMain(cmd *cobra.Command, args []string) error {
-	ksel, err := Kubesel()
-	if err != nil {
-		return err
-	}
-
-	managedKubeconfig, err := ksel.GetManagedKubeconfig()
-	if !errors.Is(err, kubesel.ErrUnmanaged) {
-		if InitCommandOptions.InheritExisting {
-			return nil
-		}
-
-		return fmt.Errorf("already managing kubeconfig: %s", managedKubeconfig.Path())
-	}
-
 	// Parse the init script as a Go template.
 	initScript, err := getInitScript(os.Args[0], args[0])
 	if err != nil {
