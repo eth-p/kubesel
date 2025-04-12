@@ -20,9 +20,9 @@ var initScripts embed.FS
 // `no-init-completions` go build tag.
 var initScriptLoadsCompletions = true
 
-// InitCommand describes the subcommand for creating a new kubesel session.
-var InitCommand = cobra.Command{
-	RunE: InitCommandMain,
+// initCommand describes the subcommand for creating a new kubesel session.
+var initCommand = cobra.Command{
+	RunE: initCommandMain,
 
 	Use: "init shell",
 
@@ -54,10 +54,10 @@ var InitCommandOptions struct {
 }
 
 func init() {
-	Command.AddCommand(&InitCommand)
+	RootCommand.AddCommand(&initCommand)
 }
 
-func InitCommandMain(cmd *cobra.Command, args []string) error {
+func initCommandMain(cmd *cobra.Command, args []string) error {
 	// Parse the init script as a Go template.
 	initScript, err := getInitScript(os.Args[0], args[0])
 	if err != nil {

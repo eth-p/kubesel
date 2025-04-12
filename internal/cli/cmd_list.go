@@ -7,13 +7,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ListCommand describes the subcommand for listing information contained
+// listCommand describes the subcommand for listing information contained
 // within kubeconfig files.
 //
 // Note: The subcommands are generated dynamically as part of program
 // initialization. See `listCommandImpl` for the entrypoint of those
 // subcommands.
-var ListCommand = cobra.Command{
+var listCommand = cobra.Command{
 	RunE:    showHelpIfNoArgs,
 	Aliases: []string{"ls"},
 
@@ -42,8 +42,8 @@ var ListCommandOptions struct {
 }
 
 func init() {
-	Command.AddCommand(&ListCommand)
-	ListCommand.PersistentFlags().VarP(
+	RootCommand.AddCommand(&listCommand)
+	listCommand.PersistentFlags().VarP(
 		&ListCommandOptions.OutputFormat,
 		"output", "o",
 		"output format",

@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var UserCommand = cobra.Command{
-	RunE: UserCommandMain,
+var userCommand = cobra.Command{
+	RunE: userCommandMain,
 
 	Aliases: []string{
 		"users",
@@ -51,11 +51,11 @@ var UserCommandOptions struct {
 }
 
 func init() {
-	Command.AddCommand(&UserCommand)
-	CreateListerFor(&UserCommand, UserListItemIter)
+	RootCommand.AddCommand(&userCommand)
+	CreateListerFor(&userCommand, UserListItemIter)
 }
 
-func UserCommandMain(cmd *cobra.Command, args []string) error {
+func userCommandMain(cmd *cobra.Command, args []string) error {
 	ksel, err := Kubesel()
 	if err != nil {
 		return err

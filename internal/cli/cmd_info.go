@@ -3,7 +3,7 @@ package cli
 import "github.com/spf13/cobra"
 
 func init() {
-	Command.AddCommand(&cobra.Command{
+	RootCommand.AddCommand(&cobra.Command{
 		Use: "info",
 
 		RunE: Info,

@@ -34,7 +34,7 @@ var internalInitCommandOptions struct {
 }
 
 func init() {
-	Command.AddCommand(&internalInitCommand)
+	RootCommand.AddCommand(&internalInitCommand)
 
 	internalInitCommand.Flags().Int32Var(
 		&internalInitCommandOptions.OwnerPID,

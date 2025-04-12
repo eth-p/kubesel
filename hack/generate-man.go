@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	err := doc.GenManTreeFromOpts(&cli.Command, doc.GenManTreeOptions{
+	err := doc.GenManTreeFromOpts(&cli.RootCommand, doc.GenManTreeOptions{
 		Header: &doc.GenManHeader{},
 		Path:   ".",
 	})

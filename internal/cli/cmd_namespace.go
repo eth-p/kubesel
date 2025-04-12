@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var NamespaceCommand = cobra.Command{
+var namespaceCommand = cobra.Command{
 	RunE: NamespaceCommandMain,
 
 	Aliases: []string{
@@ -41,7 +41,7 @@ var NamespaceCommandOptions struct {
 }
 
 func init() {
-	Command.AddCommand(&NamespaceCommand)
+	RootCommand.AddCommand(&namespaceCommand)
 	// CreateListerFor(&NamespaceCommand, NamespaceListItemIter)
 }
 

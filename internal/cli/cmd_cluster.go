@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ClusterCommand = cobra.Command{
-	RunE: ClusterCommandMain,
+var clusterCommand = cobra.Command{
+	RunE: clusterCommandMain,
 	Aliases: []string{
 		"clusters",
 		"cl",
@@ -50,11 +50,11 @@ var ClusterCommandOptions struct {
 }
 
 func init() {
-	Command.AddCommand(&ClusterCommand)
-	CreateListerFor(&ClusterCommand, ClusterListItemIter)
+	RootCommand.AddCommand(&clusterCommand)
+	CreateListerFor(&clusterCommand, ClusterListItemIter)
 }
 
-func ClusterCommandMain(cmd *cobra.Command, args []string) error {
+func clusterCommandMain(cmd *cobra.Command, args []string) error {
 	ksel, err := Kubesel()
 	if err != nil {
 		return err

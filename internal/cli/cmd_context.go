@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ContextCommand = cobra.Command{
-	RunE: ContextCommandMain,
+var contextCommand = cobra.Command{
+	RunE: contextCommandMain,
 
 	Aliases: []string{
 		"contexts",
@@ -58,18 +58,18 @@ var ContextCommandOptions struct {
 }
 
 func init() {
-	Command.AddCommand(&ContextCommand)
-	ContextCommand.PersistentFlags().BoolVarP(
+	RootCommand.AddCommand(&contextCommand)
+	contextCommand.PersistentFlags().BoolVarP(
 		&ContextCommandOptions.KeepNamespace,
 		"keep-namespace", "n",
 		false,
 		"keep the current namespace",
 	)
 
-	CreateListerFor(&ContextCommand, ContextListItemIter)
+	CreateListerFor(&contextCommand, ContextListItemIter)
 }
 
-func ContextCommandMain(cmd *cobra.Command, args []string) error {
+func contextCommandMain(cmd *cobra.Command, args []string) error {
 	ksel, err := Kubesel()
 	if err != nil {
 		return err

@@ -20,7 +20,7 @@ func main() {
 }
 
 func init() {
-	cli.Command.Version = VERSION
+	cli.RootCommand.Version = VERSION
 }
 
 // VERSION is defined by a go build flag.

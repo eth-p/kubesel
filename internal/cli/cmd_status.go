@@ -26,7 +26,7 @@ var StatusCommand = cobra.Command{
 }
 
 func init() {
-	Command.AddCommand(&StatusCommand)
+	RootCommand.AddCommand(&StatusCommand)
 }
 
 func StatusCommandMain(cmd *cobra.Command, args []string) error {

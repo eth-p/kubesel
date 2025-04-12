@@ -55,7 +55,7 @@ func CreateListerFor[I any](cmd *cobra.Command, generator ListItemGenerator[I]) 
 			Aliases: cmd.Aliases,
 
 			Short: "List available " + typeNamePlural,
-			Long:  strings.ReplaceAll(ListCommand.Long, "info", typeNamePlural),
+			Long:  strings.ReplaceAll(listCommand.Long, "info", typeNamePlural),
 
 			Args: cobra.NoArgs,
 		},
@@ -66,7 +66,7 @@ func CreateListerFor[I any](cmd *cobra.Command, generator ListItemGenerator[I]) 
 	}
 
 	// Update commands.
-	ListCommand.AddCommand(newLister.cmd)
+	listCommand.AddCommand(newLister.cmd)
 	injectListFlag(cmd, newLister)
 }
 
