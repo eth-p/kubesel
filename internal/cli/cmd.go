@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/eth-p/kubesel/internal/cobraprint"
+	"github.com/eth-p/kubesel/internal/kubectl"
 	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
@@ -40,8 +41,13 @@ var GlobalOptions struct {
 }
 
 var (
-	// Kubesel is the global instance of [kubesel.Kubesel] used by all subcommands.
+	// Kubesel is the global instance of [kubesel.Kubesel] used by all
+	// subcommands.
 	Kubesel = sync.OnceValues(kubesel.NewKubesel)
+
+	// Kubectl is the global instance of the [kubectl.Kubectl] wrapper used by
+	// all subcommands.
+	Kubectl = sync.OnceValues(kubectl.NewKubectlFromPATH)
 
 	// hasPrintedHelp is used to determine if [ExitCodeHelp] should be returned.
 	// This is set when the help function is called via `--help` or

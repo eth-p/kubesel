@@ -52,11 +52,16 @@ func namespaceSwitchImpl(ksel *kubesel.Kubesel, managedKc *kubesel.ManagedKubeco
 }
 
 func namespaceNames() ([]string, error) {
+	kctl, err := Kubectl()
+	if err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
 	// Get the namespaces using kubectl.
-	output, err := runKubectl(ctx, []string{"get", "namespace", "--output=name", "--no-headers", "--server-print"})
+	output, err := kctl.Exec(ctx, []string{"get", "namespace", "--output=name", "--no-headers", "--server-print"})
 	if err != nil {
 		return nil, err
 	}
