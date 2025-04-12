@@ -45,7 +45,7 @@ running `kubectl delete` on that cluster from your other pane.
  - [x] Shell completions for `zsh`
  - [ ] Better error handling
  - [ ] Terminal colors
- - [ ] Automatic detection of terminal color support
+ - [x] Automatic detection of terminal color support
  - [ ] Consistent exit codes
  - [ ] Install from nix flakes
  - [ ] Install from GitHub releases

@@ -14,6 +14,7 @@ import (
 // to access the cobra.Command structs for manpage generation.
 
 func main() {
+	cli.DetectTerminal()
 	exitcode, _ := cli.Run(os.Args[1:])
 	os.Exit(exitcode)
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/eth-p/kubesel/internal/cobraerr"
 	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 const (
@@ -32,10 +33,16 @@ var Command = cobra.Command{
 	SilenceUsage:  true,
 }
 
+const (
+	colorFlagName = "color"
+)
+
 var GlobalOptions struct {
-	Color bool
+	Color       bool // --color
+	OutputIsTTY bool // not a flag
 }
 
+// Kubesel is the global instance of [kubesel.Kubesel] used by all subcommands.
 var Kubesel = sync.OnceValues(kubesel.NewKubesel)
 
 func init() {
@@ -63,10 +70,29 @@ func init() {
 	// Persistent flags.
 	Command.PersistentFlags().BoolVar(
 		&GlobalOptions.Color,
-		"color",
-		true, // TODO: auto
+		colorFlagName,
+		false, // Default is set by DetectTerminal
 		"Print with colors",
 	)
+
+	Command.PersistentFlags().Lookup(colorFlagName).DefValue = "auto"
+}
+
+// DetectTerminalColors changes the default values for some options depending
+// on whether kubsel is writing its output to a terminal.
+func DetectTerminal() {
+	type getFd interface {
+		Fd() uintptr
+	}
+
+	if getFd, ok := Command.OutOrStdout().(getFd); ok {
+		fd := getFd.Fd()
+		GlobalOptions.OutputIsTTY = term.IsTerminal(int(fd))
+	}
+
+	if GlobalOptions.OutputIsTTY {
+		GlobalOptions.Color = true
+	}
 }
 
 // Run is the entrypoint for the kubesel command-line interfa
