@@ -35,8 +35,8 @@ var ContextCommand = cobra.Command{
 		name fuzzily matches multiple contexts, a fzf picker will
 		be opened.
 
-		If the context does not specify a namespace the current
-		namespace will be kept.
+		If the context does not specify a namespace (or the -n
+		flag is set), the current namespace will be kept.
 	`,
 	Example: `
 		kubesel cluster my.cluster.example  # full name
@@ -54,10 +54,18 @@ var ContextCommand = cobra.Command{
 }
 
 var ContextCommandOptions struct {
+	KeepNamespace bool
 }
 
 func init() {
 	Command.AddCommand(&ContextCommand)
+	ContextCommand.PersistentFlags().BoolVarP(
+		&ContextCommandOptions.KeepNamespace,
+		"keep-namespace", "n",
+		false,
+		"keep the current namespace",
+	)
+
 	CreateListerFor(&ContextCommand, ContextListItemIter)
 }
 
@@ -90,7 +98,7 @@ func ContextCommandMain(cmd *cobra.Command, args []string) error {
 
 	// Apply the context.
 	kcContext := kcutils.FindContext(desired, ksel.GetMergedKubeconfig())
-	if kcContext.Namespace != nil {
+	if !ContextCommandOptions.KeepNamespace && kcContext.Namespace != nil {
 		managedConfig.SetNamespace(*kcContext.Namespace)
 	}
 	managedConfig.SetClusterName(*kcContext.Cluster)

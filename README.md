@@ -95,6 +95,7 @@ kubesel namespace my-namespace  # use this namespace
 ```bash
 # Use the cluster, user, and namespace from this context.
 kubesel context my-context
+kubesel context my-context -n # keep the current namespace
 ```
 
 **View Contexts, Clusters, or Users:**
