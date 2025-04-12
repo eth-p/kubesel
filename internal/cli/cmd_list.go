@@ -14,6 +14,7 @@ import (
 // initialization. See `listCommandImpl` for the entrypoint of those
 // subcommands.
 var ListCommand = cobra.Command{
+	RunE:    showHelpIfNoArgs,
 	Aliases: []string{"ls"},
 
 	Use:     "list",

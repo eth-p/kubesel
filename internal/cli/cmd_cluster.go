@@ -29,8 +29,7 @@ var ClusterCommand = cobra.Command{
 		PluralTypeNameAnnotation: "clusters",
 	},
 
-	Args:              cobra.RangeArgs(0, 1),
-	ValidArgsFunction: nil,
+	Args: cobra.RangeArgs(0, 1),
 }
 
 var ClusterCommandOptions struct {
