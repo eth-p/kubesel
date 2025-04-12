@@ -1,20 +1,16 @@
 package cli
 
 import (
-	"fmt"
 	"iter"
 	"net/url"
-	"slices"
 	"strings"
 
-	"github.com/eth-p/kubesel/internal/fuzzy"
 	"github.com/eth-p/kubesel/pkg/kubeconfig"
+	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
 
 var userCommand = cobra.Command{
-	RunE: userCommandMain,
-
 	Aliases: []string{
 		"users",
 		"usr",
@@ -38,9 +34,6 @@ var userCommand = cobra.Command{
 		kubesel cluster myclstr             # fuzzy match
 		kubesel cluster                     # fzf picker
 	`,
-
-	Args:              cobra.RangeArgs(0, 1),
-	ValidArgsFunction: nil,
 }
 
 var UserCommandOptions struct {
@@ -52,44 +45,23 @@ func init() {
 		PropertyNameSingular: "user",
 		PropertyNamePlural:   "users",
 		ListGenerator:        UserListItemIter,
+		GetItemNames:         userNames,
+		Switch:               userSwitchImpl,
 	})
 }
 
-func userCommandMain(cmd *cobra.Command, args []string) error {
-	ksel, err := Kubesel()
+func userSwitchImpl(ksel *kubesel.Kubesel, managedKc *kubesel.ManagedKubeconfig, target string) error {
+	managedKc.SetAuthInfoName(target)
+	return managedKc.Save()
+}
+
+func userNames() ([]string, error) {
+	kubesel, err := Kubesel()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	managedConfig, err := ksel.GetManagedKubeconfig()
-	if err != nil {
-		return err
-	}
-
-	query := ""
-	if len(args) > 0 {
-		query = args[0]
-	}
-
-	available := ksel.GetAuthInfoNames()
-	desired, err := fuzzy.MatchOneOrPick(available, query)
-	if err != nil {
-		return err
-	}
-
-	// Safeguard.
-	if !slices.Contains(available, desired) {
-		return fmt.Errorf("unknown user: %v", desired)
-	}
-
-	// Apply the user.
-	managedConfig.SetAuthInfoName(desired)
-	err = managedConfig.Save()
-	if err != nil {
-		return fmt.Errorf("error updating kubeconfig: %w", err)
-	}
-
-	return nil
+	return kubesel.GetAuthInfoNames(), nil
 }
 
 type UserListItem struct {

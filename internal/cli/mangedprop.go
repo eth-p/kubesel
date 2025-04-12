@@ -1,10 +1,14 @@
 package cli
 
 import (
+	"fmt"
 	"iter"
 	"reflect"
+	"slices"
 	"strings"
 
+	"github.com/eth-p/kubesel/internal/fuzzy"
+	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +17,11 @@ type managedProperty[I any] struct {
 	PropertyNameSingular string
 	PropertyNamePlural   string
 	ListGenerator        listGenerator[I]
+	GetItemNames         func() ([]string, error)
+
+	// Switch changes the active item of this managed property.
+	// (e.g. switch to a different cluster or context)
+	Switch func(ksel *kubesel.Kubesel, managedKc *kubesel.ManagedKubeconfig, target string) error
 
 	// Set by createManagedPropertyCommands:
 
@@ -27,6 +36,8 @@ func (p *managedProperty[I]) upcast() *managedProperty[any] {
 		Aliases:              p.Aliases,
 		InfoStructType:       p.InfoStructType,
 		ListGenerator:        p.ListGenerator.upcast(),
+		GetItemNames:         p.GetItemNames,
+		Switch:               p.Switch,
 	}
 }
 
@@ -44,6 +55,7 @@ func createManagedPropertyCommands[I any](cmd *cobra.Command, prop managedProper
 	}
 
 	upProp := prop.upcast() // I -> any
+	createManagedPropertySwitchCommand(cmd, upProp)
 	createManagedPropertyListSubcommand(cmd, upProp)
 }
 
@@ -81,6 +93,56 @@ func createManagedPropertyListSubcommand(cmd *cobra.Command, prop *managedProper
 		}
 
 		return realRunE(cmd, args)
+	}
+}
+
+// createManagedPropertySwitchCommand updates the provided cobra command's
+// run function to fuzzy-match/fuzzy-pick an item of the managed property type.
+//
+// Once the item is picked, the Switch function is called to change the
+// property inside the managed kubeconfig.
+func createManagedPropertySwitchCommand(cmd *cobra.Command, prop *managedProperty[any]) {
+	if prop.Switch == nil {
+		return
+	}
+
+	cmd.Args = cobra.RangeArgs(0, 1)
+	cmd.ValidArgsFunction = nil
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ksel, err := Kubesel()
+		if err != nil {
+			return err
+		}
+
+		managedKc, err := ksel.GetManagedKubeconfig()
+		if err != nil {
+			return err
+		}
+
+		// Get the available item names.
+		available, err := prop.GetItemNames()
+		if err != nil {
+			return err
+		}
+
+		// Fuzzy match/pick based on the query (or lack thereof)
+		query := ""
+		if len(args) > 0 {
+			query = args[0]
+		}
+
+		desired, err := fuzzy.MatchOneOrPick(available, query)
+		if err != nil {
+			return err
+		}
+
+		// Safeguard.
+		if !slices.Contains(available, desired) {
+			return fmt.Errorf("unknown %s: %v", prop.PropertyNamePlural, desired)
+		}
+
+		// Switch.
+		return prop.Switch(ksel, managedKc, desired)
 	}
 }
 

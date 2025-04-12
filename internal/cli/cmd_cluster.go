@@ -1,17 +1,14 @@
 package cli
 
 import (
-	"fmt"
 	"iter"
-	"slices"
 
-	"github.com/eth-p/kubesel/internal/fuzzy"
 	"github.com/eth-p/kubesel/pkg/kubeconfig"
+	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
 
 var clusterCommand = cobra.Command{
-	RunE: clusterCommandMain,
 	Aliases: []string{
 		"clusters",
 		"cl",
@@ -37,8 +34,6 @@ var clusterCommand = cobra.Command{
 		kubesel cluster myclstr             # fuzzy match
 		kubesel cluster                     # fzf picker
 	`,
-
-	Args: cobra.RangeArgs(0, 1),
 }
 
 var ClusterCommandOptions struct {
@@ -50,43 +45,23 @@ func init() {
 		PropertyNameSingular: "cluster",
 		PropertyNamePlural:   "clusters",
 		ListGenerator:        ClusterListItemIter,
+		GetItemNames:         clusterNames,
+		Switch:               clusterSwitchImpl,
 	})
 }
 
-func clusterCommandMain(cmd *cobra.Command, args []string) error {
-	ksel, err := Kubesel()
+func clusterSwitchImpl(ksel *kubesel.Kubesel, managedKc *kubesel.ManagedKubeconfig, target string) error {
+	managedKc.SetClusterName(target)
+	return managedKc.Save()
+}
+
+func clusterNames() ([]string, error) {
+	kubesel, err := Kubesel()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	managedConfig, err := ksel.GetManagedKubeconfig()
-	if err != nil {
-		return err
-	}
-
-	query := ""
-	if len(args) > 0 {
-		query = args[0]
-	}
-
-	available := ksel.GetClusterNames()
-	desired, err := fuzzy.MatchOneOrPick(available, query)
-	if err != nil {
-		return err
-	}
-
-	// Safeguard.
-	if !slices.Contains(available, desired) {
-		return fmt.Errorf("unknown cluster: %v", desired)
-	}
-
-	managedConfig.SetClusterName(desired)
-	err = managedConfig.Save()
-	if err != nil {
-		return fmt.Errorf("error updating kubeconfig: %w", err)
-	}
-
-	return nil
+	return kubesel.GetClusterNames(), nil
 }
 
 type ClusterListItem struct {

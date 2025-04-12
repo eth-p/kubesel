@@ -1,11 +1,8 @@
 package cli
 
 import (
-	"fmt"
 	"iter"
-	"slices"
 
-	"github.com/eth-p/kubesel/internal/fuzzy"
 	"github.com/eth-p/kubesel/pkg/kubeconfig"
 	"github.com/eth-p/kubesel/pkg/kubeconfig/kcutils"
 	"github.com/eth-p/kubesel/pkg/kubesel"
@@ -13,8 +10,6 @@ import (
 )
 
 var contextCommand = cobra.Command{
-	RunE: contextCommandMain,
-
 	Aliases: []string{
 		"contexts",
 		"con",
@@ -43,9 +38,6 @@ var contextCommand = cobra.Command{
 		kubesel cluster myclstr             # fuzzy match
 		kubesel cluster                     # fzf picker
 	`,
-
-	Args:              cobra.RangeArgs(0, 1),
-	ValidArgsFunction: nil,
 }
 
 var ContextCommandOptions struct {
@@ -65,50 +57,31 @@ func init() {
 		PropertyNameSingular: "context",
 		PropertyNamePlural:   "contexts",
 		ListGenerator:        ContextListItemIter,
+		GetItemNames:         contextNames,
+		Switch:               contextSwitchImpl,
 	})
 }
 
-func contextCommandMain(cmd *cobra.Command, args []string) error {
-	ksel, err := Kubesel()
-	if err != nil {
-		return err
-	}
+func contextSwitchImpl(ksel *kubesel.Kubesel, managedKc *kubesel.ManagedKubeconfig, target string) error {
+	kcContext := kcutils.FindContext(target, ksel.GetMergedKubeconfig())
 
-	managedConfig, err := ksel.GetManagedKubeconfig()
-	if err != nil {
-		return err
-	}
+	managedKc.SetClusterName(*kcContext.Cluster)
+	managedKc.SetAuthInfoName(*kcContext.User)
 
-	query := ""
-	if len(args) > 0 {
-		query = args[0]
-	}
-
-	available := ksel.GetContextNames()
-	desired, err := fuzzy.MatchOneOrPick(available, query)
-	if err != nil {
-		return err
-	}
-
-	// Safeguard.
-	if !slices.Contains(available, desired) {
-		return fmt.Errorf("unknown context: %v", desired)
-	}
-
-	// Apply the context.
-	kcContext := kcutils.FindContext(desired, ksel.GetMergedKubeconfig())
 	if !ContextCommandOptions.KeepNamespace && kcContext.Namespace != nil {
-		managedConfig.SetNamespace(*kcContext.Namespace)
+		managedKc.SetNamespace(*kcContext.Namespace)
 	}
-	managedConfig.SetClusterName(*kcContext.Cluster)
-	managedConfig.SetAuthInfoName(*kcContext.User)
 
-	err = managedConfig.Save()
+	return managedKc.Save()
+}
+
+func contextNames() ([]string, error) {
+	kubesel, err := Kubesel()
 	if err != nil {
-		return fmt.Errorf("error updating kubeconfig: %w", err)
+		return nil, err
 	}
 
-	return nil
+	return kubesel.GetAuthInfoNames(), nil
 }
 
 type ContextListItem struct {
