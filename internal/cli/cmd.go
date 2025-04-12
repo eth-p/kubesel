@@ -9,7 +9,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/eth-p/kubesel/internal/cobraerr"
+	"github.com/eth-p/kubesel/internal/cobraprint"
 	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -33,17 +35,21 @@ var Command = cobra.Command{
 	SilenceUsage:  true,
 }
 
-const (
-	colorFlagName = "color"
-)
-
 var GlobalOptions struct {
 	Color       bool // --color
 	OutputIsTTY bool // not a flag
 }
 
-// Kubesel is the global instance of [kubesel.Kubesel] used by all subcommands.
-var Kubesel = sync.OnceValues(kubesel.NewKubesel)
+const (
+	colorFlagName = "color"
+)
+
+var (
+	// Kubesel is the global instance of [kubesel.Kubesel] used by all subcommands.
+	Kubesel = sync.OnceValues(kubesel.NewKubesel)
+
+	helpPrinter = sync.OnceValue(makeHelpPrinter)
+)
 
 func init() {
 	// Command groups.
@@ -62,10 +68,18 @@ func init() {
 		Title: "Kubesel Commands:",
 	})
 
-	// Misc.
+	// Help.
 	Command.SetHelpCommandGroupID(
 		CommandGroupKubesel,
 	)
+
+	Command.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		helpPrinter().PrintCommandHelp(cmd, args)
+	})
+
+	Command.SetUsageFunc(func(cmd *cobra.Command) error {
+		return helpPrinter().PrintCommandUsage(cmd)
+	})
 
 	// Persistent flags.
 	Command.PersistentFlags().BoolVar(
@@ -95,7 +109,7 @@ func DetectTerminal() {
 	}
 }
 
-// Run is the entrypoint for the kubesel command-line interfa
+// Run is the entrypoint for the kubesel command-line interface.
 func Run(args []string) (int, error) {
 	Command.SetArgs(args)
 	cmd, err := Command.ExecuteC()
@@ -109,8 +123,25 @@ func Run(args []string) (int, error) {
 		return 1, err
 	}
 
-	_ = cmd
 	return 0, nil
+}
+
+func makeHelpPrinter() *cobraprint.HelpPrinter {
+	opts := cobraprint.HelpPrinterOptions{
+		Indent: "  ",
+	}
+
+	if GlobalOptions.Color {
+		opts.HeadingColor = ansi.SGR(ansi.BoldAttr)
+		opts.CommandNameColor = ansi.SGR(ansi.CyanForegroundColorAttr)
+		opts.FlagNameColor = ansi.SGR(ansi.GreenForegroundColorAttr)
+		opts.ArgTypeColor = ansi.SGR(ansi.UnderlineAttr)
+	}
+
+	return cobraprint.NewHelpPrinter(
+		Command.OutOrStdout(),
+		opts,
+	)
 }
 
 func prepareErrorMessage(sb *strings.Builder, cmd *cobra.Command, err error) {
