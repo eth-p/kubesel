@@ -36,3 +36,10 @@ man:
 	-$(RM) -r man/*
 	mkdir -p man
 	cd man && go run "../hack/generate-man.go"
+
+## go.mod: update go.mod/go.sum
+.PHONY: go.mod
+go.mod:
+	go get -u ./...
+	go mod tidy
+	nix develop --command gomod2nix generate
