@@ -47,7 +47,7 @@ running `kubectl delete` on that cluster from your other pane.
  - [ ] Terminal colors
  - [x] Automatic detection of terminal color support
  - [x] Consistent exit codes
- - [ ] Install from nix flakes
+ - [x] Install from nix flakes
  - [ ] Install from GitHub releases
  - [ ] Safety kubeconfig file
  - [x] Manpages
@@ -63,6 +63,11 @@ running `kubectl delete` on that cluster from your other pane.
 
 ```bash
 go install github.com/eth-p/kubesel/cmd/kubesel
+```
+
+**With Nix:**
+```bash
+nix profile install github:eth-p/kubesel
 ```
 
 ### Setup
