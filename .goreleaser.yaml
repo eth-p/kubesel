@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - make man
+
+builds:
+  - id: kubesel
+    main: ./cmd/kubesel
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    ldflags:
+      - -X main.VERSION={{.Version}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    ignore:
+      - goos: linux
+        goarch: "386"
+      - goos: windows
+        goarch: "386"
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- title .Os | tolower }}-
+      {{- .Arch | tolower }}
+      {{- if .Arm }}-v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+    files:
+      - LICENSE
+      - README.md
+      - man/*
+
+release:
+  github:
+    owner: eth-p
+    name: kubesel
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs!?:"
+      - "^test!?:"
+      - "^build!?:"
+      - "^refactor!?:"
+      - "^chore!?:"
