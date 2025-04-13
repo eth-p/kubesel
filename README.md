@@ -54,7 +54,7 @@ running `kubectl delete` on that cluster from your other pane.
 
 **Developer Experience:**
 
- - [ ] Set up devenv
+ - [x] Set up devenv
  - [ ] Set up golangci-lint
 
 ## Installation
