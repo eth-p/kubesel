@@ -38,42 +38,46 @@ func NewHelpPrinter(opts HelpPrinterOptions) *HelpPrinter {
 func (p *HelpPrinter) PrintCommandHelp(cmd *cobra.Command, args []string) string {
 	var root tc.Sequence
 	print := helpPrintContext{
-		opts: &p.opts,
-		cmd:  cmd,
-		text: &root,
+		opts:   &p.opts,
+		cmd:    cmd,
+		output: &root,
 	}
 
 	// Append the documentation.
 	print.printCmdDescription()
 	if cmd.Runnable() || cmd.HasSubCommands() {
-		print.printCmdUsage()
-		print.printCommandAliases()
-		print.printCommandExample()
-		print.printCommandSubcommands()
-		print.printCommandFlagsSection()
+		print.appendUsageSection()
+		print.appendAliasesSection()
+		print.appendExampleSection()
+		print.appendSubcommandSection()
+		print.appendFlagsSection()
 	}
 
 	// Render the text components.
 	renderer := tc.NewRenderer()
-	renderer.Render(&root)
-	return renderer.String()
+	renderer.Render(&tc.Trim{
+		Leading: true,
+		Child:   &root,
+	})
+
+	return strings.TrimRight(renderer.String(), " ")
 }
 
 // PrintCommandUsage prints the usage documentation for the specified command.
 func (p *HelpPrinter) PrintCommandUsage(cmd *cobra.Command) string {
 	var root tc.Sequence
 	print := helpPrintContext{
-		opts: &p.opts,
-		cmd:  cmd,
-		text: &root,
+		opts:   &p.opts,
+		cmd:    cmd,
+		output: &root,
 	}
 
 	// Append the documentation.
-	print.printCmdUsage()
-	print.printCommandAliases()
-	print.printCommandExample()
-	print.printCommandSubcommands()
-	print.printCommandFlagsSection()
+	print.appendUsageSection()
+	print.appendAliasesSection()
+	print.appendExampleSection()
+	print.appendSubcommandSection()
+	print.appendFlagsSection()
 
 	if cmd.HasAvailableSubCommands() {
 		root.Append(&tc.Text{
@@ -83,32 +87,66 @@ func (p *HelpPrinter) PrintCommandUsage(cmd *cobra.Command) string {
 
 	// Render the text components.
 	renderer := tc.NewRenderer()
-	renderer.Render(&root)
-	return renderer.String()
+	renderer.Render(&tc.Trim{
+		Leading: true,
+		Child:   &root,
+	})
+
+	return strings.TrimRight(renderer.String(), " ")
+}
+
+// FlagsBlock returns the flags help section for a command.
+func (p *HelpPrinter) PrintCommandFlags(cmd *cobra.Command) string {
+	var root tc.Sequence
+	print := helpPrintContext{
+		opts:   &p.opts,
+		cmd:    cmd,
+		output: &root,
+	}
+
+	// Append the documentation.
+	print.appendFlagsSection()
+
+	// Render the text components.
+	renderer := tc.NewRenderer()
+	renderer.Render(&tc.Trim{
+		Leading: true,
+		Child:   &root,
+	})
+
+	return strings.TrimRight(renderer.String(), " ")
 }
 
 // helpPrintContext contains the context of a help printer.
+//
+// The context may be derived to do things such as changing the
+// command or wrapping the output in another text component.
 type helpPrintContext struct {
-	opts *HelpPrinterOptions
-	cmd  *cobra.Command
-	text *tc.Sequence
+	opts   *HelpPrinterOptions
+	cmd    *cobra.Command
+	output *tc.Sequence
 }
 
-func (p *helpPrintContext) withIndent() *helpPrintContext {
-	newCtx := *p
+// withIndent derives the helpPrintContext, creating a sub-context
+// where the text is indented.
+func (p helpPrintContext) withIndent() helpPrintContext {
+	newCtx := p // shallow copy
 
-	output := &tc.Sequence{}
-	p.text.Append(&tc.LinePrefix{
+	// Create a new Sequence component to store the to-be-indented components.
+	// Use it as the child for a LinePrefix component, and add the LinePrefix
+	// component to this helpPrintContext's childOutput.
+	childOutput := &tc.Sequence{}
+	p.output.Append(&tc.LinePrefix{
 		Prefix: &tc.Text{Text: p.opts.Indent},
-		Child:  output,
+		Child:  childOutput,
 	})
 
-	newCtx.text = output
-	return &newCtx
+	newCtx.output = childOutput
+	return newCtx
 }
 
-func (p *helpPrintContext) printSectionHeading(heading string) {
-	p.text.Append(
+func (p helpPrintContext) printSectionHeading(heading string) {
+	p.output.Append(
 		tc.Newline,
 		&tc.Text{
 			Text:  heading,
@@ -118,7 +156,7 @@ func (p *helpPrintContext) printSectionHeading(heading string) {
 	)
 }
 
-func (p *helpPrintContext) printCmdDescription() {
+func (p helpPrintContext) printCmdDescription() {
 	cmd := p.cmd
 	description := cmd.Long
 	if description == "" {
@@ -131,115 +169,123 @@ func (p *helpPrintContext) printCmdDescription() {
 
 	// Clean up the description string and append it.
 	description = strings.Trim(dedent.Dedent(description), "\n")
-	p.text.Append(
+	p.output.Append(
 		&tc.Text{Text: description},
 		tc.Newline,
 	)
 }
 
-// printCmdUsage prints the `Usage:` section.
-func (p *helpPrintContext) printCmdUsage() {
-	cmd := p.cmd
-	if !cmd.Runnable() && !cmd.HasAvailableSubCommands() {
+// appendUsageSection adds the `Usage:` heading and section.
+func (p helpPrintContext) appendUsageSection() {
+	if !p.cmd.Runnable() && !p.cmd.HasAvailableSubCommands() {
 		return
 	}
 
 	p.printSectionHeading("Usage:")
+	p.withIndent().appendUsageSectionContents()
+}
 
-	if cmd.Runnable() {
-		p.text.Append(&tc.Text{
-			Text: fmt.Sprintf("%s%s\n", p.opts.Indent, cmd.UseLine()),
-		})
+// appendUsageSectionContents adds the `Usage:` section contents.
+func (p helpPrintContext) appendUsageSectionContents() {
+	if p.cmd.Runnable() {
+		p.output.Append(
+			&tc.Text{Text: p.cmd.UseLine()},
+			tc.Newline,
+		)
 	}
 
-	if cmd.HasAvailableSubCommands() {
-		p.text.Append(&tc.Text{
-			Text: fmt.Sprintf("%s%s [command]\n", p.opts.Indent, cmd.CommandPath()),
+	if p.cmd.HasAvailableSubCommands() {
+		p.output.Append(&tc.Text{
+			Text: fmt.Sprintf("%s [command]\n", p.cmd.CommandPath()),
 		})
 	}
 }
 
-// printCommandAliases prints the `Aliases:` section.
-func (p *helpPrintContext) printCommandAliases() {
+// appendAliasesSection adds the `Aliases:` heading and section.
+func (p helpPrintContext) appendAliasesSection() {
 	cmd := p.cmd
 	if len(cmd.Aliases) == 0 {
 		return
 	}
 
 	p.printSectionHeading("Aliases:")
-	p.text.Append(
-		&tc.Text{
-			Text: fmt.Sprintf("%s%s\n", p.opts.Indent, cmd.NameAndAliases()),
-		},
+	p.withIndent().appendAliasesSectionContents()
+}
+
+// appendAliasesSectionContents adds the `Aliases:` section contents.
+func (p helpPrintContext) appendAliasesSectionContents() {
+	p.output.Append(
+		&tc.Text{Text: p.cmd.NameAndAliases()},
+		tc.Newline,
 	)
 }
 
-// printCommandExample prints the `Example:` section.
-func (p *helpPrintContext) printCommandExample() {
+// appendExampleSection adds the `Example:` heading and section.
+func (p helpPrintContext) appendExampleSection() {
 	cmd := p.cmd
 	if !cmd.HasExample() {
 		return
 	}
 
-	// Clean up the example string and indent it.
-	example := strings.Trim(dedent.Dedent(cmd.Example), "\n")
-	example = strings.ReplaceAll(example, "\n", "\n"+p.opts.Indent)
-
 	p.printSectionHeading("Examples:")
-	p.text.Append(
-		&tc.Text{
-			Text: fmt.Sprintf("%s%s\n", p.opts.Indent, example),
-		},
+	p.withIndent().appendExampleSectionContents()
+}
+
+// appendExampleSectionContents adds the `Example:` section contents.
+func (p helpPrintContext) appendExampleSectionContents() {
+	example := FixDescriptionWhitespace(p.cmd.Example)
+	p.output.Append(
+		&tc.Text{Text: example},
+		tc.Newline,
 	)
 }
 
-// printCommandExample prints the command's subcommands.
-func (p *helpPrintContext) printCommandSubcommands() {
-	cmd := p.cmd
-	if !cmd.HasAvailableSubCommands() {
+// appendSubcommandSection adds the command's subcommand groups.
+func (p helpPrintContext) appendSubcommandSection() {
+	if !p.cmd.HasAvailableSubCommands() {
 		return
 	}
 
-	cmds := cmd.Commands()
+	groups := p.cmd.Groups()
 
-	// When there are no command groups.
-	if len(cmd.Groups()) == 0 {
+	// If there are no command groups, print everything at once.
+	if len(groups) == 0 {
 		p.printSectionHeading("Available Commands:")
-		for _, subcmd := range cmds {
-			if subcmd.IsAvailableCommand() {
-				p.printSubcommandLine(subcmd)
-			}
-		}
-
+		p.withIndent().appendSubcommandSectionGroupContents(nil)
 		return
 	}
 
-	// When there are command groups.
-	for _, group := range cmd.Groups() {
+	// Otherwise, print them on a group-by-group basis.
+	for _, group := range groups {
 		p.printSectionHeading(group.Title)
-		for _, subcmd := range cmds {
-			if subcmd.GroupID == group.ID && subcmd.IsAvailableCommand() {
-				p.printSubcommandLine(subcmd)
-			}
-		}
+		p.withIndent().appendSubcommandSectionGroupContents(group)
 	}
 
-	if !cmd.AllChildCommandsHaveGroup() {
+	if !p.cmd.AllChildCommandsHaveGroup() {
 		p.printSectionHeading("Additional Commands:")
-		for _, subcmd := range cmds {
-			if subcmd.GroupID == "" && (subcmd.IsAvailableCommand()) {
-				p.printSubcommandLine(subcmd)
-			}
+		p.withIndent().appendSubcommandSectionGroupContents(nil)
+	}
+}
+
+// appendSubcommandSectionGroupContents adds the commands within a subcommand
+// group.
+func (p helpPrintContext) appendSubcommandSectionGroupContents(group *cobra.Group) {
+	groupID := ""
+	if group != nil {
+		groupID = group.ID
+	}
+
+	for _, subcmd := range p.cmd.Commands() {
+		if subcmd.GroupID == groupID && subcmd.IsAvailableCommand() {
+			p.appendSubcommand(subcmd)
 		}
 	}
 }
 
-func (p *helpPrintContext) printSubcommandLine(subcmd *cobra.Command) {
+// appendSubcommandSectionGroupContents adds a line describing the subcommand.
+func (p helpPrintContext) appendSubcommand(subcmd *cobra.Command) {
 	name := subcmd.Name()
-	p.text.Append(
-		&tc.Text{
-			Text: p.opts.Indent,
-		},
+	p.output.Append(
 		&tc.Text{
 			Text:  name,
 			Color: p.opts.CommandNameColor,
@@ -258,19 +304,21 @@ func (p *helpPrintContext) printSubcommandLine(subcmd *cobra.Command) {
 	)
 }
 
-func (p *helpPrintContext) printCommandFlagsSection() {
+// appendFlagsSection adds the `Flags:` heading and section.
+func (p helpPrintContext) appendFlagsSection() {
 	cmd := p.cmd
 	if !cmd.HasAvailableLocalFlags() && !cmd.HasAvailableInheritedFlags() {
 		return
 	}
 
 	p.printSectionHeading("Flags:")
-	p.withIndent().printCommandFlags()
+	p.withIndent().appendFlagsSectionContents()
 }
 
-func (p *helpPrintContext) printCommandFlags() {
+// appendAliasesSectionContents adds the `Flags:` section contents.
+func (p helpPrintContext) appendFlagsSectionContents() {
 	flags := gatherFlagsInfo(p.cmd)
-	out := p.text
+	out := p.output
 
 	// Pre-calculate common strings.
 	noFlagShorthandSpacing := strings.Repeat(" ", flags.MaxShorthandWidth+2)
@@ -424,4 +472,13 @@ type flagInfo struct {
 	NoOptDefaultWidth int
 	Default           string
 	DefaultWidth      int
+}
+
+// FixDescriptionWhitespace removes indentation and leading/trailing newlines
+// from a string. This cleans up the leftover whitespace caused by using
+// a backtick string in the [cobra.Command] fields.
+func FixDescriptionWhitespace(s string) string {
+	s = dedent.Dedent(s)
+	s = strings.Trim(s, "\n")
+	return s
 }

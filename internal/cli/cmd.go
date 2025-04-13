@@ -122,8 +122,9 @@ func makeHelpPrinter() *cobraprint.HelpPrinter {
 
 func makeErrorPrinter() *cobraprint.ErrorPrinter {
 	opts := cobraprint.ErrorPrinterOptions{
-		Indent:      "  ",
-		HelpPrinter: helpPrinter(),
+		Indent:           "  ",
+		BlockquoteIndent: "▏ ",
+		HelpPrinter:      helpPrinter(),
 	}
 
 	if GlobalOptions.Color {
