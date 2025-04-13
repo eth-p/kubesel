@@ -33,6 +33,18 @@
             pwd = ./.;
             src = gitignoreSource [ ] ./.;
             modules = ./gomod2nix.toml;
+
+            outputs = [ "out" "man" ];
+
+            buildPhase = ''
+              echo "compiling kubesel"
+              mkdir -p $out/bin
+              go build -o $out/bin/kubesel ./cmd/kubesel
+
+              echo "generating manuals"
+              mkdir -p $man/share/man/man1
+              go run hack/generate-man.go -outdir $man/share/man/man1
+            '';
           };
         };
 
