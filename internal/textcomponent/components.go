@@ -37,6 +37,7 @@ func NewRenderer() *Renderer {
 func (r *Renderer) Render(c Component) {
 	if bc, ok := c.(BasicComponent); ok {
 		bc.Render(r)
+		return
 	}
 
 	for _, component := range c.Simplify(r) {
