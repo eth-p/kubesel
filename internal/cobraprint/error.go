@@ -1,11 +1,13 @@
 package cobraprint
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
 	"github.com/eth-p/kubesel/internal/cobraerr"
 	tc "github.com/eth-p/kubesel/internal/textcomponent"
+	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
 
@@ -141,6 +143,14 @@ func (p errorPrintContext) appendError() {
 
 	case *cobraerr.UnknownCommandError:
 		p.appendUnknownCommandError(refined)
+		return
+	}
+
+	// Kubesel errors.
+	if errors.Is(p.err, kubesel.ErrUnmanaged) {
+		p.appendErrorText("kubesel is not initialized\n")
+		p.withBlockquote(p.opts.ErrorTextColor, "").
+			appendText("Use `kubesel init` to set up kubesel in the current shell.")
 		return
 	}
 
