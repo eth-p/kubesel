@@ -3,7 +3,7 @@ function __kubesel_init
     functions -e __kubesel_init
     set -l new_kubeconfig ({{ .kubesel_executable | shellquote }} __init --pid=$fish_pid)
     if test $status -eq 0
-        set -x KUBECONFIG "$new_kubeconfig"
+        set -gx KUBECONFIG "$new_kubeconfig"
     end
 end
 
