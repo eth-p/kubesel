@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// TODO: Refactor to use textcomponent package?
+
 type HelpPrinterOptions struct {
 	Indent                       string
 	HeadingColor                 string

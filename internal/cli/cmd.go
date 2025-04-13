@@ -54,6 +54,7 @@ var (
 	// `kubesel help`.
 	hasPrintedHelp = false
 	helpPrinter    = sync.OnceValue(makeHelpPrinter)
+	errorPrinter   = sync.OnceValue(makeErrorPrinter)
 )
 
 func init() {
@@ -112,6 +113,23 @@ func makeHelpPrinter() *cobraprint.HelpPrinter {
 
 	return cobraprint.NewHelpPrinter(
 		RootCommand.OutOrStdout(),
+		opts,
+	)
+}
+
+func makeErrorPrinter() *cobraprint.ErrorPrinter {
+	opts := cobraprint.ErrorPrinterOptions{
+		Indent:      "  ",
+		HelpPrinter: helpPrinter(),
+	}
+
+	if GlobalOptions.Color {
+		opts.ErrorCommandColor = ansi.SGR(ansi.BoldAttr, ansi.BrightRedForegroundColorAttr)
+		opts.ErrorTextColor = ansi.SGR(ansi.RedForegroundColorAttr)
+		opts.TipColor = ansi.SGR(ansi.YellowForegroundColorAttr)
+	}
+
+	return cobraprint.NewErrorPrinter(
 		opts,
 	)
 }
