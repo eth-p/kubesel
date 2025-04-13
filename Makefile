@@ -35,7 +35,7 @@ format:
 man:
 	-$(RM) -r man/*
 	mkdir -p man
-	cd man && go run "../hack/generate-man.go"
+	go run hack/generate-man.go -outdir man
 
 ## go.mod: update go.mod/go.sum
 .PHONY: go.mod
