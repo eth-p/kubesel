@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -80,12 +81,17 @@ func init() {
 	)
 
 	RootCommand.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		helpPrinter().PrintCommandHelp(cmd, args)
 		hasPrintedHelp = true
+		out := cmd.OutOrStdout()
+		usage := helpPrinter().PrintCommandHelp(cmd, args)
+		_, _ = io.WriteString(out, usage)
 	})
 
 	RootCommand.SetUsageFunc(func(cmd *cobra.Command) error {
-		return helpPrinter().PrintCommandUsage(cmd)
+		out := cmd.OutOrStdout()
+		usage := helpPrinter().PrintCommandUsage(cmd)
+		_, _ = io.WriteString(out, usage)
+		return nil
 	})
 
 	// Persistent flags.
@@ -111,10 +117,7 @@ func makeHelpPrinter() *cobraprint.HelpPrinter {
 		opts.ArgTypeColor = ansi.SGR(ansi.UnderlineAttr)
 	}
 
-	return cobraprint.NewHelpPrinter(
-		RootCommand.OutOrStdout(),
-		opts,
-	)
+	return cobraprint.NewHelpPrinter(opts)
 }
 
 func makeErrorPrinter() *cobraprint.ErrorPrinter {
@@ -129,7 +132,5 @@ func makeErrorPrinter() *cobraprint.ErrorPrinter {
 		opts.TipColor = ansi.SGR(ansi.YellowForegroundColorAttr)
 	}
 
-	return cobraprint.NewErrorPrinter(
-		opts,
-	)
+	return cobraprint.NewErrorPrinter(opts)
 }

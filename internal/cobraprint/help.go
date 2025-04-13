@@ -2,18 +2,16 @@ package cobraprint
 
 import (
 	"fmt"
-	"io"
 	"slices"
 	"strings"
 
 	"github.com/eth-p/kubesel/internal/printer"
+	tc "github.com/eth-p/kubesel/internal/textcomponent"
 	"github.com/lithammer/dedent"
 	"github.com/mattn/go-runewidth"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
-
-// TODO: Refactor to use textcomponent package?
 
 type HelpPrinterOptions struct {
 	Indent                       string
@@ -28,86 +26,157 @@ type HelpPrinterOptions struct {
 
 type HelpPrinter struct {
 	opts HelpPrinterOptions
-	out  io.Writer
 }
 
-func NewHelpPrinter(out io.Writer, opts HelpPrinterOptions) *HelpPrinter {
+func NewHelpPrinter(opts HelpPrinterOptions) *HelpPrinter {
 	return &HelpPrinter{
-		out:  out,
 		opts: opts,
 	}
 }
 
 // PrintCommandHelp prints help documentation for the specified command.
-// This should be given to [cobra.Command]'s `SetHelpFunc`.
-func (p *HelpPrinter) PrintCommandHelp(cmd *cobra.Command, args []string) {
-	w := p.out
-
-	usage := cmd.Long
-	if usage == "" {
-		usage = cmd.Short
+func (p *HelpPrinter) PrintCommandHelp(cmd *cobra.Command, args []string) string {
+	var root tc.Sequence
+	print := helpPrintContext{
+		opts: &p.opts,
+		cmd:  cmd,
+		text: &root,
 	}
 
-	if usage != "" {
-		fmt.Fprintln(w, strings.Trim(dedent.Dedent(usage), "\n"))
-		fmt.Fprintln(w)
-	}
-
+	// Append the documentation.
+	print.printCmdDescription()
 	if cmd.Runnable() || cmd.HasSubCommands() {
-		p.printCmdUsage(cmd)
-		p.printCommandAliases(cmd)
-		p.printCommandExample(cmd)
-		p.printCommandSubcommands(cmd)
-		p.printCommandFlags(cmd)
+		print.printCmdUsage()
+		print.printCommandAliases()
+		print.printCommandExample()
+		print.printCommandSubcommands()
+		print.printCommandFlagsSection()
 	}
+
+	// Render the text components.
+	renderer := tc.NewRenderer()
+	renderer.Render(&root)
+	return renderer.String()
 }
 
 // PrintCommandUsage prints the usage documentation for the specified command.
-// This should be given to [cobra.Command]'s `SetUsageFunc`.
-func (p *HelpPrinter) PrintCommandUsage(cmd *cobra.Command) error {
-	w := cmd.OutOrStdout()
-	p.printCmdUsage(cmd)
-	p.printCommandAliases(cmd)
-	p.printCommandExample(cmd)
-	p.printCommandSubcommands(cmd)
-	p.printCommandFlags(cmd)
-
-	if cmd.HasAvailableSubCommands() {
-		fmt.Fprintf(w, "\n\nUse \"%s [command] --help\" for more information about a command.", cmd.CommandPath())
+func (p *HelpPrinter) PrintCommandUsage(cmd *cobra.Command) string {
+	var root tc.Sequence
+	print := helpPrintContext{
+		opts: &p.opts,
+		cmd:  cmd,
+		text: &root,
 	}
 
-	fmt.Fprintln(w)
-	return nil
+	// Append the documentation.
+	print.printCmdUsage()
+	print.printCommandAliases()
+	print.printCommandExample()
+	print.printCommandSubcommands()
+	print.printCommandFlagsSection()
+
+	if cmd.HasAvailableSubCommands() {
+		root.Append(&tc.Text{
+			Text: fmt.Sprintf("\n\nUse \"%s [command] --help\" for more information about a command.", cmd.CommandPath()),
+		})
+	}
+
+	// Render the text components.
+	renderer := tc.NewRenderer()
+	renderer.Render(&root)
+	return renderer.String()
+}
+
+// helpPrintContext contains the context of a help printer.
+type helpPrintContext struct {
+	opts *HelpPrinterOptions
+	cmd  *cobra.Command
+	text *tc.Sequence
+}
+
+func (p *helpPrintContext) withIndent() *helpPrintContext {
+	newCtx := *p
+
+	output := &tc.Sequence{}
+	p.text.Append(&tc.LinePrefix{
+		Prefix: &tc.Text{Text: p.opts.Indent},
+		Child:  output,
+	})
+
+	newCtx.text = output
+	return &newCtx
+}
+
+func (p *helpPrintContext) printSectionHeading(heading string) {
+	p.text.Append(
+		tc.Newline,
+		&tc.Text{
+			Text:  heading,
+			Color: p.opts.HeadingColor,
+		},
+		tc.Newline,
+	)
+}
+
+func (p *helpPrintContext) printCmdDescription() {
+	cmd := p.cmd
+	description := cmd.Long
+	if description == "" {
+		description = cmd.Short
+	}
+
+	if description == "" {
+		return
+	}
+
+	// Clean up the description string and append it.
+	description = strings.Trim(dedent.Dedent(description), "\n")
+	p.text.Append(
+		&tc.Text{Text: description},
+		tc.Newline,
+	)
 }
 
 // printCmdUsage prints the `Usage:` section.
-func (p *HelpPrinter) printCmdUsage(cmd *cobra.Command) {
-	w := p.out
+func (p *helpPrintContext) printCmdUsage() {
+	cmd := p.cmd
+	if !cmd.Runnable() && !cmd.HasAvailableSubCommands() {
+		return
+	}
 
-	fmt.Fprintf(w, "%s\n", printer.ApplyColor(p.opts.HeadingColor, "Usage:"))
+	p.printSectionHeading("Usage:")
 
 	if cmd.Runnable() {
-		fmt.Fprintf(w, "%s%s\n", p.opts.Indent, cmd.UseLine())
+		p.text.Append(&tc.Text{
+			Text: fmt.Sprintf("%s%s\n", p.opts.Indent, cmd.UseLine()),
+		})
 	}
 
 	if cmd.HasAvailableSubCommands() {
-		fmt.Fprintf(w, "%s%s [command]\n", p.opts.Indent, cmd.CommandPath())
+		p.text.Append(&tc.Text{
+			Text: fmt.Sprintf("%s%s [command]\n", p.opts.Indent, cmd.CommandPath()),
+		})
 	}
 }
 
 // printCommandAliases prints the `Aliases:` section.
-func (p *HelpPrinter) printCommandAliases(cmd *cobra.Command) {
+func (p *helpPrintContext) printCommandAliases() {
+	cmd := p.cmd
 	if len(cmd.Aliases) == 0 {
 		return
 	}
 
-	w := p.out
-	fmt.Fprintf(w, "\n%s\n", printer.ApplyColor(p.opts.HeadingColor, "Aliases:"))
-	fmt.Fprintf(w, "%s%s\n", p.opts.Indent, cmd.NameAndAliases())
+	p.printSectionHeading("Aliases:")
+	p.text.Append(
+		&tc.Text{
+			Text: fmt.Sprintf("%s%s\n", p.opts.Indent, cmd.NameAndAliases()),
+		},
+	)
 }
 
 // printCommandExample prints the `Example:` section.
-func (p *HelpPrinter) printCommandExample(cmd *cobra.Command) {
+func (p *helpPrintContext) printCommandExample() {
+	cmd := p.cmd
 	if !cmd.HasExample() {
 		return
 	}
@@ -116,23 +185,26 @@ func (p *HelpPrinter) printCommandExample(cmd *cobra.Command) {
 	example := strings.Trim(dedent.Dedent(cmd.Example), "\n")
 	example = strings.ReplaceAll(example, "\n", "\n"+p.opts.Indent)
 
-	w := p.out
-	fmt.Fprintf(w, "\n%s\n", printer.ApplyColor(p.opts.HeadingColor, "Examples:"))
-	fmt.Fprintf(w, "%s%s\n", p.opts.Indent, example)
+	p.printSectionHeading("Examples:")
+	p.text.Append(
+		&tc.Text{
+			Text: fmt.Sprintf("%s%s\n", p.opts.Indent, example),
+		},
+	)
 }
 
 // printCommandExample prints the command's subcommands.
-func (p *HelpPrinter) printCommandSubcommands(cmd *cobra.Command) {
+func (p *helpPrintContext) printCommandSubcommands() {
+	cmd := p.cmd
 	if !cmd.HasAvailableSubCommands() {
 		return
 	}
 
-	w := p.out
 	cmds := cmd.Commands()
 
 	// When there are no command groups.
 	if len(cmd.Groups()) == 0 {
-		fmt.Fprintf(w, "\n%s\n", printer.ApplyColor(p.opts.HeadingColor, "Available Commands:"))
+		p.printSectionHeading("Available Commands:")
 		for _, subcmd := range cmds {
 			if subcmd.IsAvailableCommand() {
 				p.printSubcommandLine(subcmd)
@@ -144,7 +216,7 @@ func (p *HelpPrinter) printCommandSubcommands(cmd *cobra.Command) {
 
 	// When there are command groups.
 	for _, group := range cmd.Groups() {
-		fmt.Fprintf(w, "\n%s\n", printer.ApplyColor(p.opts.HeadingColor, group.Title))
+		p.printSectionHeading(group.Title)
 		for _, subcmd := range cmds {
 			if subcmd.GroupID == group.ID && subcmd.IsAvailableCommand() {
 				p.printSubcommandLine(subcmd)
@@ -153,7 +225,7 @@ func (p *HelpPrinter) printCommandSubcommands(cmd *cobra.Command) {
 	}
 
 	if !cmd.AllChildCommandsHaveGroup() {
-		fmt.Fprintf(w, "\n%s\n", printer.ApplyColor(p.opts.HeadingColor, "Additional Commands:"))
+		p.printSectionHeading("Additional Commands:")
 		for _, subcmd := range cmds {
 			if subcmd.GroupID == "" && (subcmd.IsAvailableCommand()) {
 				p.printSubcommandLine(subcmd)
@@ -162,64 +234,112 @@ func (p *HelpPrinter) printCommandSubcommands(cmd *cobra.Command) {
 	}
 }
 
-func (p *HelpPrinter) printSubcommandLine(subcmd *cobra.Command) {
-	w := p.out
+func (p *helpPrintContext) printSubcommandLine(subcmd *cobra.Command) {
 	name := subcmd.Name()
-	fmt.Fprintf(w,
-		"%s%s%s %s\n",
-		p.opts.Indent,
-		printer.ApplyColor(p.opts.CommandNameColor, name),
-		printer.MakePadding(name, subcmd.NamePadding()),
-		printer.ApplyColor(p.opts.CommandShortDescriptionColor, subcmd.Short),
+	p.text.Append(
+		&tc.Text{
+			Text: p.opts.Indent,
+		},
+		&tc.Text{
+			Text:  name,
+			Color: p.opts.CommandNameColor,
+		},
+		&tc.Text{
+			Text: printer.MakePadding(name, subcmd.NamePadding()),
+		},
+		&tc.Text{
+			Text: " ",
+		},
+		&tc.Text{
+			Text:  subcmd.Short,
+			Color: p.opts.CommandShortDescriptionColor,
+		},
+		tc.Newline,
 	)
 }
 
-func (p *HelpPrinter) printCommandFlags(cmd *cobra.Command) {
+func (p *helpPrintContext) printCommandFlagsSection() {
+	cmd := p.cmd
 	if !cmd.HasAvailableLocalFlags() && !cmd.HasAvailableInheritedFlags() {
 		return
 	}
 
-	w := p.out
-	flags := gatherFlagsInfo(cmd)
+	p.printSectionHeading("Flags:")
+	p.withIndent().printCommandFlags()
+}
+
+func (p *helpPrintContext) printCommandFlags() {
+	flags := gatherFlagsInfo(p.cmd)
+	out := p.text
 
 	// Pre-calculate common strings.
 	noFlagShorthandSpacing := strings.Repeat(" ", flags.MaxShorthandWidth+2)
 	maxSecondColWidth := flags.MaxNameWidth + flags.MaxVarNameWidth + 1
 
 	// Iterate the flags and print them.
-	fmt.Fprintf(w, "\n%s\n", printer.ApplyColor(p.opts.HeadingColor, "Flags:"))
 	for _, flag := range flags.Flags {
-		fmt.Fprint(w, p.opts.Indent)
 
 		// Flag shorthand: `-x, `
 		if flag.Shorthand != "" {
-			fmt.Fprintf(w, "%s%s, ",
-				printer.MakePadding(flag.Shorthand, flags.MaxShorthandWidth),
-				printer.ApplyColor(p.opts.FlagNameColor, flag.Shorthand),
+			out.Append(
+				&tc.Text{
+					Text: printer.MakePadding(flag.Shorthand, flags.MaxShorthandWidth),
+				},
+				&tc.Text{
+					Text:  flag.Shorthand,
+					Color: p.opts.FlagNameColor,
+				},
+				&tc.Text{
+					Text: ", ",
+				},
 			)
 		} else if flags.MaxShorthandWidth > 0 {
-			fmt.Fprint(w, noFlagShorthandSpacing)
+			out.Append(&tc.Text{
+				Text: noFlagShorthandSpacing,
+			})
 		}
 
 		// Flag name: `--flag`
 		width := flag.NameWidth + 1 + flag.VarNameWidth
-		fmt.Fprintf(w, "%s %s",
-			printer.ApplyColor(p.opts.FlagNameColor, flag.Name),
-			printer.ApplyColor(p.opts.ArgTypeColor, flag.VarName),
+		out.Append(
+			&tc.Text{
+				Text:  flag.Name,
+				Color: p.opts.FlagNameColor,
+			},
+			&tc.Text{
+				Text: " ",
+			},
+			&tc.Text{
+				Text:  flag.VarName,
+				Color: p.opts.FlagNameColor,
+			},
 		)
 
 		// Description.
-		fmt.Fprint(w, strings.Repeat(" ", maxSecondColWidth-width))
-		fmt.Fprintf(w, "   %s",
-			printer.ApplyColor(p.opts.FlagDescriptionColor, flag.Usage),
+		out.Append(
+			&tc.Text{
+				Text:  strings.Repeat(" ", maxSecondColWidth-width),
+				Color: p.opts.FlagNameColor,
+			},
+			&tc.Text{
+				Text: "   ",
+			},
+			&tc.Text{
+				Text:  flag.Usage,
+				Color: p.opts.FlagDescriptionColor,
+			},
 		)
 
 		// Default.
 		if flag.Default != "" {
-			fmt.Fprintf(w, " (default %s)", flag.Default)
+			out.Append(
+				&tc.Text{
+					Text: fmt.Sprintf(" (default %s)", flag.Default),
+				},
+			)
 		}
 
-		fmt.Fprintln(w)
+		out.Append(tc.Newline)
 	}
 }
 
