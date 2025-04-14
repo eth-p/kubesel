@@ -14,6 +14,7 @@ const (
 func Run(args []string) (int, error) {
 	RootCommand.SetArgs(args)
 	cmd, err := RootCommand.ExecuteC()
+	defer gcWait.Wait()
 
 	if err != nil {
 		errorPrinter().PrintCommandError(

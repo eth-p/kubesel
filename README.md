@@ -29,7 +29,7 @@ running `kubectl delete` on that cluster from your other pane.
  - [x] Listing namespaces with `kubesel list namespaces`
  - [ ] Automatically switch users with `kubesel cluster <clusters>`
  - [x] Garbage collection of outdated/defunct session files
- - [ ] Automatic garbage collection
+ - [x] Automatic garbage collection
  - [ ] `kubesel status` to show current session info
  - [ ] `kubesel status` to show problems with kubeconfig files
 

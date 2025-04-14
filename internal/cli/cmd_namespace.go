@@ -29,6 +29,8 @@ var namespaceCommand = cobra.Command{
 	Example: `
 		kubesel namespace kube-system  # full name
 	`,
+
+	PreRun: tryQuickGC,
 }
 
 var NamespaceCommandOptions struct {

@@ -34,6 +34,8 @@ var clusterCommand = cobra.Command{
 		kubesel cluster myclstr             # fuzzy match
 		kubesel cluster                     # fzf picker
 	`,
+
+	PreRun: tryQuickGC,
 }
 
 var ClusterCommandOptions struct {

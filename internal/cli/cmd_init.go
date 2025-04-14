@@ -22,7 +22,8 @@ var initScriptLoadsCompletions = true
 
 // initCommand describes the subcommand for creating a new kubesel session.
 var initCommand = cobra.Command{
-	RunE: initCommandMain,
+	PreRun: tryNormalGC,
+	RunE:   initCommandMain,
 
 	Use:     "init shell",
 	GroupID: "Kubesel",

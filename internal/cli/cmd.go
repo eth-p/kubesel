@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"fmt"
 	"io"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"sync"
@@ -22,6 +24,7 @@ const (
 const (
 	colorFlagName = "color"
 	listFlagName  = "list"
+	debugFlagName = "debug"
 )
 
 // RootCommand is the root `kubesel` command.
@@ -37,6 +40,7 @@ var RootCommand = cobra.Command{
 }
 
 var GlobalOptions struct {
+	Debug       bool // --debug (hidden flag)
 	Color       bool // --color
 	OutputIsTTY bool // not a flag
 }
@@ -56,6 +60,10 @@ var (
 	hasPrintedHelp = false
 	helpPrinter    = sync.OnceValue(makeHelpPrinter)
 	errorPrinter   = sync.OnceValue(makeErrorPrinter)
+
+	// gcWait is a WaitGroup that waits for automatic garbage collection to
+	// finish running.
+	gcWait sync.WaitGroup
 )
 
 func init() {
@@ -102,7 +110,15 @@ func init() {
 		"Print with colors",
 	)
 
+	RootCommand.PersistentFlags().BoolVar(
+		&GlobalOptions.Debug,
+		debugFlagName,
+		false,
+		"Print with colors",
+	)
+
 	RootCommand.PersistentFlags().Lookup(colorFlagName).DefValue = "auto"
+	RootCommand.PersistentFlags().Lookup(debugFlagName).Hidden = true
 }
 
 func makeHelpPrinter() *cobraprint.HelpPrinter {
@@ -134,4 +150,47 @@ func makeErrorPrinter() *cobraprint.ErrorPrinter {
 	}
 
 	return cobraprint.NewErrorPrinter(opts)
+}
+
+// tryQuickGC has a 1 in 2 chance to run a background garbage collection over
+// 5 files. The files checked are nondeterministic, and _eventually_ all files
+// will end up checked.
+func tryQuickGC(cmd *cobra.Command, args []string) {
+	tryGC(2, 5)
+}
+
+// tryNormalGC has a 1 in 5 chance to run a background garbage collection over
+// 25 files. The files checked are nondeterministic, and _eventually_ all files
+// will end up checked.
+func tryNormalGC(cmd *cobra.Command, args []string) {
+	tryGC(5, 25)
+}
+
+func tryGC(chance, maxFiles int) {
+	debugf("Trying GC. chance=%d maxFiles=%d\n", chance, maxFiles)
+	randResult := rand.IntN(chance)
+	if randResult != 0 {
+		return
+	}
+
+	gcWait.Add(1)
+	defer gcWait.Done()
+
+	ksel, err := Kubesel()
+	if err != nil {
+		debugf("Cannot run GC. err=%v\n", err)
+		return
+	}
+
+	debugf("Running GC.\n")
+	res, err := ksel.GarbageCollect(&kubesel.GarbageCollectOptions{
+		MaxFilesToCheck: maxFiles,
+	})
+	debugf("Finished GC. res=%v err=%v\n", res, err)
+}
+
+func debugf(pattern string, args ...any) {
+	if GlobalOptions.Debug {
+		fmt.Fprintf(os.Stderr, pattern, args...)
+	}
 }
