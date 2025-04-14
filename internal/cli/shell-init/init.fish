@@ -1,6 +1,9 @@
 # Update the KUBECONFIG environment variable.
 function __kubesel_init
     functions -e __kubesel_init
+    {{- with .add_kubeconfigs }}
+    set -gx KUBECONFIG "$KUBECONFIG:"{{ join . ":" | shellquote }}
+    {{- end }}
     set -l new_kubeconfig ({{ .kubesel_executable | shellquote }} __init --pid=$fish_pid)
     if test $status -eq 0
         set -gx KUBECONFIG "$new_kubeconfig"

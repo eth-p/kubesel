@@ -10,6 +10,8 @@ import (
 	"text/template"
 
 	"al.essio.dev/pkg/shellescape"
+	"github.com/adrg/xdg"
+	"github.com/eth-p/kubesel/internal/cobraerr"
 	"github.com/spf13/cobra"
 )
 
@@ -53,15 +55,23 @@ var initCommand = cobra.Command{
 }
 
 var InitCommandOptions struct {
+	KubeconfigFiles []string
 }
 
 func init() {
 	RootCommand.AddCommand(&initCommand)
+	initCommand.Flags().StringArrayVar(&InitCommandOptions.KubeconfigFiles, "add-kubeconfigs", []string{}, "kubeconfig files to add")
 }
 
 func initCommandMain(cmd *cobra.Command, args []string) error {
+	// Find kubeconfig files specified as glob patterns.
+	kcFiles, err := resolveKubeconfigFileGlobs()
+	if err != nil {
+		return err
+	}
+
 	// Parse the init script as a Go template.
-	initScript, err := getInitScript(os.Args[0], args[0])
+	initScript, err := getInitScript(os.Args[0], args[0], kcFiles)
 	if err != nil {
 		return err
 	}
@@ -81,7 +91,7 @@ func initCommandMain(cmd *cobra.Command, args []string) error {
 //   - bash
 //   - fish
 //   - zsh
-func getInitScript(argv0 string, shell string) (string, error) {
+func getInitScript(argv0 string, shell string, extraKubeconfigFiles []string) (string, error) {
 	templateSource, err := initScripts.ReadFile("shell-init/init." + shell)
 	if err != nil {
 		return "", fmt.Errorf("unsupported shell: %s", shell)
@@ -91,6 +101,7 @@ func getInitScript(argv0 string, shell string) (string, error) {
 	tpl := template.New("init-script").
 		Funcs(template.FuncMap{
 			"shellquote": shellescape.Quote,
+			"join":       strings.Join,
 		})
 
 	tpl, err = tpl.Parse(string(templateSource))
@@ -104,6 +115,7 @@ func getInitScript(argv0 string, shell string) (string, error) {
 		"kubesel_executable": argv0,
 		"kubesel_name":       filepath.Base(argv0),
 		"load_completions":   initScriptLoadsCompletions,
+		"add_kubeconfigs":    extraKubeconfigFiles,
 	})
 
 	if err != nil {
@@ -111,4 +123,50 @@ func getInitScript(argv0 string, shell string) (string, error) {
 	}
 
 	return sb.String(), nil
+}
+
+// resolveKubeconfigFileGlobs searches for the files referenced in the
+// `--add-kubeconfigs` flag.
+func resolveKubeconfigFileGlobs() ([]string, error) {
+	if len(InitCommandOptions.KubeconfigFiles) == 0 {
+		return nil, nil
+	}
+
+	var results []string
+	for _, glob := range InitCommandOptions.KubeconfigFiles {
+		glob = expandTilde(glob)
+		matches, err := filepath.Glob(glob)
+		if err != nil {
+			return nil, &cobraerr.InvalidFlagError{
+				Flag:  "add-kubeconfigs",
+				Value: glob,
+				Cause: err.Error(),
+			}
+		}
+
+		for _, file := range matches {
+			results = append(results, file)
+		}
+	}
+
+	if len(results) == 0 {
+		return nil, &cobraerr.InvalidFlagError{
+			Flag:  "add-kubeconfigs",
+			Value: strings.Join(InitCommandOptions.KubeconfigFiles, " "),
+			Cause: "no files match the provided glob",
+		}
+	}
+
+	return results, nil
+}
+
+// expandTilde expands file paths that start with `~/` to `$HOME/`.
+// If the path does not start with a tilde, it will be returned as-is.
+func expandTilde(path string) string {
+	cutPath, hasPrefix := strings.CutPrefix(path, "~/")
+	if hasPrefix {
+		return filepath.Join(xdg.Home, cutPath)
+	} else {
+		return path
+	}
 }

@@ -2,6 +2,10 @@
 __kubesel_init() {
     unset -f __kubesel_init
 
+    {{- with .add_kubeconfigs }}
+    export KUBECONFIG="$KUBECONFIG:"{{ join . ":" | shellquote }}
+    {{- end }}
+
     local new_kubeconfig
     new_kubeconfig="$({{ .kubesel_executable | shellquote }} __init --pid=$$)"
     if test $? -eq 0; then
