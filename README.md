@@ -1,61 +1,32 @@
 # kubesel
 
->[!important]
-> **This is a major work in progress.**
->
-> The code is messy/undocumented, the UX needs improving, and
-> there's a lot of things that still need to be implemented.
-
 Kubesel (**kube**config **sel**ector) is your modern approach to working with
 [kubectl](https://kubernetes.io/docs/reference/kubectl/) configuration in a
 multi-cluster, multi-namespace environment. Quickly and easily change your
 active kubectl context, namespace, and cluster through a single program.
 
+![Screenshot of kubesel](./screenshots/example.png)
+
 Designed from the ground up using the [KUBECONFIG environment variable](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#the-kubeconfig-environment-variable),
 kubesel creates and manages a unique kubeconfig file for each shell session.
-If you change your cluster in one pane, there's no chance\* of accidentally
-running `kubectl delete` on that cluster from your other pane.
+If you change your cluster in one pane, it won't affect the other pane where
+you were planning on running `kubectl delete`.
 
-\*unless you copied the `KUBECONFIG` environment variable to the other pane.
 
-## 🚧 Progress Checklist 🚧
+---
 
-**Features:**
+**Table of Contents:**
 
- - [x] Switch contexts with `kubesel context <context>`
- - [x] Switch users with `kubesel user <user>`
- - [x] Switch clusters with `kubesel cluster <cluster>`
- - [x] Switch namespaces with `kubesel namespace <namespace>`
- - [x] Listing namespaces with `kubesel list namespaces`
- - [ ] Automatically switch users with `kubesel cluster <clusters>`
- - [x] Garbage collection of outdated/defunct session files
- - [x] Automatic garbage collection
- - [ ] `kubesel status` to show current session info
- - [ ] `kubesel status` to show problems with kubeconfig files
+ - [Installation](#installation)
+   - [Setup](#setup)
+ - [Features](#features)
+ - [Usage](#usage)
+ - [Tips](#tips)
+   - [List Output Formats](#list-output-formats)
+   - [Adding Kubeconfig Files From a Directory](#adding-kubeconfig-files-from-a-directory)
+ - [Alternatives](#alternatives)
 
-**User Experience:**
-
- - [x] Use fzf-based UI to select context/user/cluster when none provided.
- - [x] Use fzf-based to fuzzily match clusters, showing a UI for multiple matches.
- - [x] Init script for `fish`
- - [x] Init script for `bash`
- - [x] Init script for `zsh`
- - [x] Shell completions for `fish`
- - [x] Shell completions for `bash`
- - [x] Shell completions for `zsh`
- - [ ] Better error handling
- - [ ] Terminal colors
- - [x] Automatic detection of terminal color support
- - [x] Consistent exit codes
- - [x] Install from nix flakes
- - [ ] Install from GitHub releases
- - [ ] Safety kubeconfig file
- - [x] Manpages
-
-**Developer Experience:**
-
- - [x] Set up devenv
- - [ ] Set up golangci-lint
+---
 
 ## Installation
 
@@ -72,20 +43,72 @@ nix profile install github:eth-p/kubesel
 
 ### Setup
 
-> [!important]
-> The `KUBECONFIG` environment variable should be set before kubesel is run.
+For kubesel to set contexts/namespaces per shell, it needs to be able to
+generate and manage a kubeconfig file associated with specific instances
+of the shell. To do this, `kubesel init` creates a shell script that
+will generate the file and update the `KUBECONFIG` environment variable.
 
-In order for kubesel to manage a per-shell kubeconfig file, it needs to create
-the file and update your `KUBECONFIG` environment variable when the shell
-starts.
+While you can run the command manually, it is **highly** recommended to set
+up your `.profile`/`.rc` files to automatically run it whenever a new
+interactive shell is created. Doing it this way eliminates the risk of multiple
+shells accidentally sharing the same kubesel-managed kubeconfig file.
 
-#### Fish
+> [!note]
+> The `KUBECONFIG` environment variable should be set *before* `kubesel init`
+> is run.
 
-Add this to your `~/.config/fish/config.fish` file:
+<details>
+<summary><b>Bash</b></summary>
+
+Add this to `~/.bash_profile`:
+
+```bash
+if [[ $- = *i* ]]; then
+    source <(kubesel init bash)
+fi
+```
+
+</details>
+
+<details>
+<summary><b>Zsh</b></summary>
+
+Add this to `~/.zshrc`:
+
+```zsh
+source <(kubesel init zsh)
+```
+
+</details>
+
+<details>
+<summary><b>Fish</b></summary>
+
+Add this to `~/.config/fish/config.fish`:
 
 ```fish
-kubesel init fish | source
+if status is-interactive
+    kubesel init fish | source
+end
 ```
+
+</details>
+
+
+## Features
+
+ - [x] Per-shell context (cluster, user, and namespace).
+ - [x] Supports
+       [bash](https://www.gnu.org/software/bash/),
+       [zsh](https://www.zsh.org/), and
+       [fish](https://fishshell.com/).
+ - [x] Shell completions.
+ - [x] Fuzzy matching contexts/clusters/users/namespaces.
+ - [x] A fzf interface for picking contexts/clusters/users/namespaces.
+ - [x] Preserves OIDC authentication refresh tokens.
+ - [x] Shell-scripting friendly `list` subcommand.
+ - [x] Manual pages.
+ - [x] Fancy ANSI colors! (optional)
 
 ## Usage
 
@@ -113,7 +136,7 @@ kubesel list namespaces
 
 ## Tips
 
-### Alternate kubsel list outputs
+### List Output Formats
 
 The `kubesel list` command supports changing its output format with `--output`.  
 Supported formats are:
@@ -122,7 +145,23 @@ Supported formats are:
  - `table` for a table
  - `col` for columns
  - `col=COL1,COL2` for specific columns
+ - `col=*` for _all_ columns
 
+### Adding Kubeconfig Files From a Directory
+
+If you keep each cluster in a different kubeconfig file, you can have kubesel
+automatically include them during initialization:
+
+```bash
+ls ~/.kube/configs
+# prod.yaml
+# staging.yaml
+# dev.yaml
+# kind-myapp.yaml
+
+# Use the `--add-kubeconfigs` flag to include them with a glob pattern.
+kubesel init --add-kubeconfigs='~/.kube/configs/*.yaml'
+```
 
 ## Alternatives
 
@@ -138,7 +177,7 @@ https://github.com/Ramilito/kubesess
 
  - ✅ Per-shell cluster/namespace/context.
  - ✅ Fuzzy-finding.
- - ⚠️ Does not handle OIDC refresh tokens properly.
+ - ⚠️ Does not support OIDC refresh tokens.
 
 ### fish-kubeswitch
 https://github.com/eth-p/fish-kubeswitch

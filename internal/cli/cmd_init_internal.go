@@ -20,8 +20,14 @@ var internalInitCommand = cobra.Command{
 
 	Short: "Create a new kubesel session file",
 	Example: `
+		# bash
+		export KUBECONFIG="$(kubesel __init --pid=$$)"
+
+		# zsh
+		export KUBECONFIG="$(kubesel __init --pid=$$)"
+
 		# fish
-		set -x KUBECONFIG (kubesel __init --pid=$fish_pid)
+		set -gx KUBECONFIG (kubesel __init --pid=$fish_pid)
 	`,
 
 	Args: cobra.NoArgs,

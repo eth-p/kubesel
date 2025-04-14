@@ -44,6 +44,9 @@ var initCommand = cobra.Command{
 
 		# fish
 		kubesel init fish | source
+
+		# Add kubeconfig files from a glob pattern.
+		kubesel init fish --add-kubeconfigs=~/.kube/configs/*.yaml | source
 	`,
 
 	Args: cobra.ExactArgs(1),
