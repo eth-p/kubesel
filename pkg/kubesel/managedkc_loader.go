@@ -130,7 +130,7 @@ func newManagedKubeconfig(sessionFile string, owner Owner) (*ManagedKubeconfig, 
 		},
 	}
 
-	// Return the
+	// Return the [ManagedKubeconfig] wrapping the kubeconfig.
 	return &ManagedKubeconfig{
 		file:    sessionFile,
 		owner:   owner,

@@ -5,6 +5,7 @@ import (
 	"runtime/debug"
 
 	"github.com/eth-p/kubesel/internal/cli"
+	"github.com/shirou/gopsutil/v4/host"
 )
 
 // THIS FILE IS ONLY A PROGRAM ENTRYPOINT.
@@ -14,6 +15,7 @@ import (
 // to access the cobra.Command structs for manpage generation.
 
 func main() {
+	host.EnableBootTimeCache(true)
 	cli.DetectTerminal()
 	exitcode, _ := cli.Run(os.Args[1:])
 	os.Exit(exitcode)

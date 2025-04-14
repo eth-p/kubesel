@@ -27,6 +27,30 @@ func (o *Owner) fileName() string {
 	return fmt.Sprintf("kubesel-%s-%s-kubeconfig.yaml", bootTimeHex, pidHex)
 }
 
+// IsAlive returns true if the owner is still alive.
+//
+// An owner is considered alive if the [Owner]'s process is not dead,
+// and if the system hasn't rebooted since the [Owner] was first created.
+func (o *Owner) IsAlive() (bool, error) {
+	// Get the system boot time.
+	bootTime, err := host.BootTime()
+	if err != nil {
+		return false, fmt.Errorf("finding epoch time: %w", err)
+	}
+
+	if o.Epoch != bootTime {
+		return false, nil
+	}
+
+	// Check if the owner process is alive.
+	exists, err := process.PidExists(o.Process)
+	if err != nil {
+		return false, fmt.Errorf("checking process %d: %w", o.Process, err)
+	}
+
+	return exists, nil
+}
+
 // OwnerForProcess creates an [Owner] using the specified process
 // as the session's owner.
 func OwnerForProcess(pid PidType) (*Owner, error) {
