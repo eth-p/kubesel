@@ -83,7 +83,7 @@ func contextNames() ([]string, error) {
 		return nil, err
 	}
 
-	return kubesel.GetAuthInfoNames(), nil
+	return kubesel.GetContextNames(), nil
 }
 
 type contextInfo struct {
