@@ -10,7 +10,7 @@ import (
 )
 
 func TestParseUnknownFlagError(t *testing.T) {
-	cmd := cobra.Command{
+	cmd := cobra.Command{ // <-- prevents testcases from being parallel
 		Use:           "test",
 		SilenceErrors: true,
 		SilenceUsage:  true,
@@ -100,8 +100,6 @@ func TestParseUnknownFlagError(t *testing.T) {
 	t.Parallel()
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
 			err := runCobraCommand(t, &cmd, tc.Args)
 			actualErr, ok := ParseUnknownFlagError(err)
 			require.True(t, ok, "Failed to parse the Cobra error string:\n%s", err)
