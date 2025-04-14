@@ -9,7 +9,7 @@ import (
 
 var gcCommand = cobra.Command{
 	Use:     "garbage-collect",
-	GroupID: "Kubeconfig",
+	GroupID: "Kubesel",
 	// Hidden:  true,
 
 	Short: "Remove kubesel-managed files for defunct shells",

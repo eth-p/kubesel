@@ -24,7 +24,8 @@ var initScriptLoadsCompletions = true
 var initCommand = cobra.Command{
 	RunE: initCommandMain,
 
-	Use: "init shell",
+	Use:     "init shell",
+	GroupID: "Kubesel",
 
 	Short: "Initialize kubesel in the current shell",
 	Long: `
