@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/eth-p/kubesel/pkg/kubeconfig/kcutils"
 	"github.com/eth-p/kubesel/pkg/kubesel"
 	"github.com/spf13/cobra"
 )
@@ -60,30 +61,55 @@ func internalInitCommandMain(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create the managed kubeconfig.
-	var managedKcPath string
 	managedKc, err := ksel.CreateManagedKubeconfig(*owner)
 
-	if err == nil {
-		// If the managed kubeconfig is new, we need to save it.
-		managedKcPath = managedKc.Path()
-		err = managedKc.Save()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "kubesel error creating managed kubeconfig: %v\n", err)
-			os.Exit(2)
-		}
-	} else if errors.Is(err, kubesel.ErrAlreadyManaged) {
-		// If the managed kubeconfig already exists, we'll re-use it.
-		managedKcPath = ksel.GetManagedKubeconfigPathForOwner(*owner)
-	} else {
-		// If there is any other error, fail.
+	// If the managed kubeconfig already exists, we'll re-use it.
+	if errors.Is(err, kubesel.ErrAlreadyManaged) {
+		printNewKubeconfigEnvVar(ksel, ksel.GetManagedKubeconfigPathForOwner(*owner))
+		return nil
+	}
+
+	// If an error occurred, exit.
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "kubesel error creating managed kubeconfig: %v\n", err)
 		os.Exit(2)
 	}
 
-	// Print the updated KUBECONFIG.
+	// Use the same cluster, user, and namespace we had before.
+	currentKc := ksel.GetMergedKubeconfig()
+	if currentKc.CurrentContext != nil {
+		currentContext := kcutils.FindContext(*currentKc.CurrentContext, currentKc)
+		if currentContext != nil {
+			if currentContext.Cluster != nil {
+				managedKc.SetClusterName(*currentContext.Cluster)
+			}
+			if currentContext.User != nil {
+				managedKc.SetAuthInfoName(*currentContext.User)
+			}
+			if currentContext.Namespace != nil {
+				managedKc.SetNamespace(*currentContext.Namespace)
+			}
+
+			err = managedKc.Save()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "kubesel error creating managed kubeconfig: %v\n", err)
+				os.Exit(2)
+			}
+		}
+	}
+
+	// Print the new KUBECONFIG environment variable.
+	printNewKubeconfigEnvVar(ksel, managedKc.Path())
+	return nil
+}
+
+func printNewKubeconfigEnvVar(ksel *kubesel.Kubesel, managedKcPath string) {
 	var sb strings.Builder
+
+	// Add the managed kubeconfig file at the start.
 	sb.WriteString(managedKcPath)
 
+	// Add the unmanaged kubeconfig files at the end.
 	for _, kcPath := range ksel.GetKubeconfigFilePaths() {
 		if ksel.IsManagedKubeconfigPath(kcPath) {
 			continue
@@ -93,6 +119,6 @@ func internalInitCommandMain(cmd *cobra.Command, args []string) error {
 		sb.WriteString(kcPath)
 	}
 
+	// Print it.
 	fmt.Fprintf(os.Stdout, "%s\n", sb.String())
-	return nil
 }
