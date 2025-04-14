@@ -22,6 +22,11 @@ endif
 bin:
 	go build -o "kubesel" ./cmd/kubesel
 
+## test: run tests
+.PHONY: test
+test:
+	go test ./internal/... ./pkg/...
+
 ## format: reformat source code
 .PHONY: format
 format:
