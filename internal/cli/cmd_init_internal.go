@@ -110,13 +110,18 @@ func printNewKubeconfigEnvVar(ksel *kubesel.Kubesel, managedKcPath string) {
 	sb.WriteString(managedKcPath)
 
 	// Add the unmanaged kubeconfig files at the end.
+	// Only print a file the first time it appears.
+	seenFiles := make(map[string]bool, 0)
 	for _, kcPath := range ksel.GetKubeconfigFilePaths() {
 		if ksel.IsManagedKubeconfigPath(kcPath) {
 			continue
 		}
 
-		sb.WriteRune(filepath.ListSeparator)
-		sb.WriteString(kcPath)
+		if !seenFiles[kcPath] {
+			seenFiles[kcPath] = true
+			sb.WriteRune(filepath.ListSeparator)
+			sb.WriteString(kcPath)
+		}
 	}
 
 	// Print it.
