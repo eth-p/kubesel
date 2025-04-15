@@ -1,13 +1,17 @@
 package cli
 
 import (
+	"errors"
+
+	"github.com/eth-p/kubesel/internal/fuzzy"
 	"golang.org/x/term"
 )
 
 const (
-	ExitCodeOK    = 0
-	ExitCodeError = 1
-	ExitCodeHelp  = 10
+	ExitCodeOK        = 0
+	ExitCodeError     = 1
+	ExitCodeHelp      = 10
+	ExitCodeCancelled = 130
 )
 
 // Run is the entrypoint for the kubesel command-line interface.
@@ -17,6 +21,10 @@ func Run(args []string) (int, error) {
 	defer gcWait.Wait()
 
 	if err != nil {
+		if errors.Is(err, fuzzy.ErrUserCancelled) {
+			return ExitCodeCancelled, err
+		}
+
 		errorPrinter().PrintCommandError(
 			RootCommand.ErrOrStderr(),
 			cmd,
