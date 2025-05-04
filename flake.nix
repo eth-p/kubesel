@@ -34,7 +34,10 @@
             src = gitignoreSource [ ] ./.;
             modules = ./gomod2nix.toml;
 
-            outputs = [ "out" "man" ];
+            outputs = [
+              "out"
+              "man"
+            ];
 
             buildPhase = ''
               echo "compiling kubesel"
