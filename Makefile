@@ -30,10 +30,7 @@ test:
 ## format: reformat source code
 .PHONY: format
 format:
-	go fmt \
-		./cmd/... \
-		./internal/... \
-		./pkg/...
+	treefmt
 
 ## doc: generate manpages
 .PHONY: man

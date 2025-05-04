@@ -1,0 +1,57 @@
+# Configuration for treefmt.
+#
+# Program: https://treefmt.com/latest/
+# ==============================================================================
+excludes = [
+	# IDE files
+	".idea",
+	".vscode",
+
+	# system files
+	".DS_Store",
+	"._*",
+
+	# devenv
+	".devenv*",
+	".direnv",
+	"devenv.local.nix",
+
+	# build
+	"gomod2nix.toml",
+	"/kubesel",
+	"/man",
+	"/dist",
+
+	# tooling
+	".envrc",
+	".editorconfig",
+	".git*",
+	"*.lock",
+
+	# unsupported
+	"internal/cli/shell-init/*", # Go templates
+	"go.mod",
+	"go.sum",
+	"*.md",
+	"*.png",
+	"Makefile",
+	"LICENSE",
+]
+
+[formatter.gofmt]
+command = "gofmt"
+excludes = ["vendor/*"]
+options = ["-w"]
+includes = ["*.go"]
+
+[formatter.nixfmt-rfc-style]
+command = "nixfmt"
+excludes = []
+includes = ["*.nix"]
+options = []
+
+[formatter.prettier]
+command = "prettier"
+options = ["--write"]
+excludes = []
+includes = ["*.toml", "*.json", "*.json5", "*.yaml", "*.yml"]
