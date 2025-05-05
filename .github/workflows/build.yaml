@@ -26,3 +26,29 @@ jobs:
       - name: "Run `go build`"
         run: |-
           go build ./cmd/kubesel/...
+
+  flake:
+    strategy:
+      matrix:
+        nixpkgs:
+          - flake-specified
+          - unstable
+    name: Nix Flake — nixpkgs ${{ matrix.nixpkgs }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Run `nix build`"
+        if: matrix.nixpkgs == 'flake-specified'
+        run: |-
+          nix build path:. \
+            --no-update-lock-file
+
+      - name: "Run `nix build` with `nixpkgs-${{ matrix.nixpkgs }}`"
+        if: matrix.nixpkgs == 'default'
+        run: |-
+          nix build path:. \
+            --no-update-lock-file \
+            --override-flake github:NixOS/nixpkgs/nixos-24.11 github:NixOS/nixpkgs/nixos-${{ matrix.nixpkgs }}
