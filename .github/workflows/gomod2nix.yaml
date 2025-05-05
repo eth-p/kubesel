@@ -1,0 +1,66 @@
+name: "Gomod2nix"
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - "master"
+      - "main"
+      - "dev"
+    tags:
+      - "*"
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'gomod2nix.toml'
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'gomod2nix.toml'
+
+jobs:
+  gomod2nix:
+    name: Check gomod2nix
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-url: ${{ steps.upload.outputs.artifact-url }}
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - run: nix develop --command gomod2nix generate
+      - name: Upload gomod2nix.toml
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: gomod2nix.toml
+          path: |-
+            gomod2nix.toml
+      - name: Generate diff
+        id: diff
+        run: |-
+          if ! git diff --exit-code gomod2nix.toml; then
+            echo "outdated=true" >>"$GITHUB_OUTPUT"
+            exit 1
+          fi
+      - name: Generate job summary
+        if: failure() && steps.diff.outputs.outdated == 'true'
+        run: |-
+          {
+            echo "### gomod2nix.toml needs to be updated"
+            echo "**Diff:**"
+            echo '```diff'
+            git diff --color=never gomod2nix.toml
+            echo '```'
+          } >>$GITHUB_STEP_SUMMARY
+      - name: Pull request comment
+        uses: thollander/actions-comment-pull-request@v3
+        if: failure() && steps.diff.outputs.outdated == 'true' && github.event_name == 'pull_request'
+        with:
+          comment-tag: "gomod2nix-outdated"
+          mode: recreate
+          message: |
+            Dependency changes resulted in an update to `gomod2nix.toml` being required.
+            Please replace the file with the contents of [this file](${{ steps.upload.outputs.artifact-url }}).
