@@ -42,7 +42,7 @@
             buildPhase = ''
               echo "compiling kubesel"
               mkdir -p $out/bin
-              go build -o $out/bin/kubesel ./cmd/kubesel
+              go build -o $out/bin/kubesel ./
 
               echo "generating fish completions"
               mkdir -p $out/share/fish/vendor_completions.d

@@ -20,7 +20,7 @@ endif
 ## bin: compile the kubesel executable
 .PHONY: bin
 bin:
-	go build -o "kubesel" ./cmd/kubesel
+	go build -o "kubesel" ./
 
 ## test: run tests
 .PHONY: test

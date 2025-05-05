@@ -25,7 +25,7 @@ jobs:
           go-version-file: go.mod
       - name: "Run `go build`"
         run: |-
-          go build ./cmd/kubesel/...
+          go build ./
 
   flake:
     strategy:

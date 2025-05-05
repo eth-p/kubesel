@@ -33,7 +33,7 @@ you were planning on running `kubectl delete`.
 **With Go:**
 
 ```bash
-go install github.com/eth-p/kubesel/cmd/kubesel
+go install github.com/eth-p/kubesel
 ```
 
 **With Nix:**
