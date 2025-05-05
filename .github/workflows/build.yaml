@@ -47,7 +47,7 @@ jobs:
             --no-update-lock-file
 
       - name: "Run `nix build` with `nixpkgs-${{ matrix.nixpkgs }}`"
-        if: matrix.nixpkgs == 'default'
+        if: matrix.nixpkgs != 'flake-specified'
         run: |-
           nix build path:. \
             --no-update-lock-file \
