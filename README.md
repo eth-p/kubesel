@@ -1,9 +1,13 @@
-# kubesel
-
 Kubesel (**kube**config **sel**ector) is your modern approach to working with
 [kubectl](https://kubernetes.io/docs/reference/kubectl/) configuration in a
 multi-cluster, multi-namespace environment. Quickly and easily change your
 active kubectl context, namespace, and cluster through a single program.
+
+[![Latest Version](https://img.shields.io/github/v/release/eth-p/kubesel?display_name=tag&style=flat-square&label=version)](https://github.com/eth-p/kubesel/releases/latest)
+[![MIT License](https://img.shields.io/github/license/eth-p/kubesel?style=flat-square)](https://github.com/eth-p/kubesel/blob/master/LICENSE)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/eth-p/kubesel/.github%2Fworkflows%2Fbuild.yaml?branch=master&event=push&style=flat-square&logo=github)](https://github.com/eth-p/kubesel/actions/workflows/build.yaml?query=branch:master)
+[![Nix Flake Installation](https://img.shields.io/badge/flake-github%3Aeth--p%2Fkubesel-%235277C3?style=flat-square&logo=nixos&logoColor=%23ffffff)](#with-nix)
+[![Go Reference](https://img.shields.io/badge/-reference-%2300ADD8?style=flat-square&logo=go&logoColor=%23ffffff)](https://pkg.go.dev/github.com/eth-p/kubesel/pkg/kubesel)
 
 ![Screenshot of kubesel](./screenshots/example.png)
 
@@ -30,13 +34,13 @@ you were planning on running `kubectl delete`.
 
 ## Installation
 
-**With Go:**
+### With Go
 
 ```bash
 go install github.com/eth-p/kubesel
 ```
 
-**With Nix:**
+### With Nix
 ```bash
 nix profile install github:eth-p/kubesel
 ```
