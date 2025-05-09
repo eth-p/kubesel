@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"runtime/debug"
 
@@ -22,23 +23,27 @@ func main() {
 }
 
 func init() {
-	cli.RootCommand.Version = GetVersion()
+	cli.RootCommand.Version = getVersion()
 }
 
-// VERSION is defined by a go build flag.
-// If empty, the build info provided by the Go compiler will be used instead.
-var VERSION string
+// VERSION is the most recent git tag.
+var VERSION string = "v0.0.1"
 
-func GetVersion() string {
-	if VERSION != "" {
-		return VERSION
+// GIT_REVISION is defined by a go build flag.
+// If empty, this will be read from the build info instead.
+var GIT_REVISION string
+
+func getVersion() string {
+	if GIT_REVISION == "" {
+		if buildinfo, ok := debug.ReadBuildInfo(); ok {
+			for _, buildsetting := range buildinfo.Settings {
+				switch buildsetting.Key {
+				case "vcs.revision":
+					GIT_REVISION = buildsetting.Value
+				}
+			}
+		}
 	}
 
-	if buildinfo, ok := debug.ReadBuildInfo(); ok {
-		VERSION = buildinfo.Main.Version
-	} else {
-		VERSION = "unknown"
-	}
-
-	return VERSION
+	return fmt.Sprintf("%s (%s)", VERSION, GIT_REVISION)
 }

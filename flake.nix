@@ -24,8 +24,6 @@
         pkgs = import nixpkgs { inherit system; };
         inherit (pkgs.nix-gitignore) gitignoreSource;
         inherit (gomod2nix.legacyPackages.${system}) buildGoApplication;
-
-        versName = builtins.substring 0 12 (self.rev or self.dirtyRev or "unknown");
       in
       {
         packages = rec {
@@ -36,10 +34,6 @@
             src = gitignoreSource [ ] ./.;
             modules = ./gomod2nix.toml;
 
-            meta = {
-              version = self.shortRev or self.dirtyShortRev or "unknown";
-            };
-
             outputs = [
               "out"
               "man"
@@ -48,7 +42,9 @@
             buildPhase = ''
               echo "compiling kubesel"
               mkdir -p $out/bin
-              go build -o $out/bin/kubesel -ldflags '-X main.VERSION=${versName}' ./
+              go build -o $out/bin/kubesel \
+                -ldflags '-X main.GIT_REVISION=${self.rev or self.dirtyRev or "unknown"}' \
+                ./
 
               echo "generating fish completions"
               mkdir -p $out/share/fish/vendor_completions.d
