@@ -1,0 +1,35 @@
+name: 'Hello World'
+description: 'Greet someone'
+inputs:
+  executable:
+    description: 'The kubesel executable'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Validate Version String
+      uses: actions/github-script@v7
+      env:
+        KUBESEL: ${{ inputs.executable }}
+      with:
+        script: |-
+          const kubesel = process.env.KUBESEL;
+          const pattern = /^kubesel(?:\.exe)? version ([^ ]+) \(([a-f0-9]+)\)$/;
+
+          function trimStdout({ stdout }) {
+            return stdout.trim();
+          }
+
+          const expectedVersion = trimStdout(await exec.getExecOutput("git", ["describe", "--tags", "--abbrev=0"]));
+          const kubeselVersionMessage = trimStdout(await exec.getExecOutput(kubesel, ['--version']));
+
+          const matches = pattern.exec(kubeselVersionMessage);
+          if (matches == null) {
+            core.error(`Could not parse kubesel version string: "${kubeselVersionMessage}"`);
+            process.exit(1);
+          }
+
+          if (matches[1] != expectedVersion) {
+            core.error(`Expected kubesel version "${expectedVersion}", got ${matches[1]}.\nUpdate the version in main.go`)
+            process.exit(1);
+          }

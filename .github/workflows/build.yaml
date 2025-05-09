@@ -20,12 +20,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
       - name: "Run `go build`"
         run: |-
-          go build ./
+          go build -o kubesel ./
+      - name: "Rename executable (Windows)"
+        if: runner.os == 'Windows'
+        run: |-
+          mv kubesel kubesel.exe
+      - name: Validate output of `kubesel --version`
+        uses: ./.github/actions/version-check
+        with:
+          executable: ./kubesel
 
   flake:
     strategy:
@@ -37,18 +48,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - name: "Run `nix build`"
         if: matrix.nixpkgs == 'flake-specified'
         run: |-
-          nix build path:. \
+          nix build . \
             --no-update-lock-file
 
       - name: "Run `nix build` with `nixpkgs-${{ matrix.nixpkgs }}`"
         if: matrix.nixpkgs != 'flake-specified'
         run: |-
-          nix build path:. \
+          nix build . \
             --no-update-lock-file \
             --override-flake github:NixOS/nixpkgs/nixos-24.11 github:NixOS/nixpkgs/nixos-${{ matrix.nixpkgs }}
+
+      - name: Validate output of `kubesel --version`
+        uses: ./.github/actions/version-check
+        with:
+          executable: ./result/bin/kubesel
