@@ -44,6 +44,7 @@
               mkdir -p $out/bin
               go build -o $out/bin/kubesel \
                 -ldflags '-X main.GIT_REVISION=${self.rev or self.dirtyRev or "unknown"}' \
+                -tags no_init_completions \
                 ./
 
               echo "generating fish completions"
