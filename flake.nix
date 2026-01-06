@@ -82,5 +82,9 @@
           };
         }
       );
+
+      overlays.default = final: prev: {
+        kubesel = self.packages.${prev.stdenv.hostPlatform.system}.kubesel;
+      };
     };
 }
