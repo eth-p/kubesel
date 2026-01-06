@@ -3,11 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-    flake-utils.url = "github:numtide/flake-utils";
+    systems.url = "github:nix-systems/default";
     gomod2nix = {
       url = "github:nix-community/gomod2nix?rev=9b6058eb92b71f2aa20c86a118aab9e41632e8bc";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
     };
   };
 
@@ -15,18 +14,24 @@
     {
       self,
       nixpkgs,
-      flake-utils,
+      systems,
       gomod2nix,
     }@inputs:
-    (flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-        inherit (pkgs.nix-gitignore) gitignoreSource;
-        inherit (gomod2nix.legacyPackages.${system}) buildGoApplication;
-      in
-      {
-        packages = rec {
+    let
+      forEachSystem =
+        fn: nixpkgs.lib.genAttrs (import systems) (system: fn {
+          inherit system;
+          pkgs = (import nixpkgs { inherit system; });
+        });
+    in
+    {
+      packages = forEachSystem (
+        { system, pkgs }:
+        let
+          inherit (pkgs.nix-gitignore) gitignoreSource;
+          inherit (gomod2nix.legacyPackages.${system}) buildGoApplication;
+        in
+        rec {
           default = kubesel;
           kubesel = buildGoApplication {
             name = "kubesel";
@@ -64,13 +69,18 @@
               go run hack/generate-man.go -outdir $man/share/man/man1
             '';
           };
-        };
+        }
+      );
 
-        devShells.default = pkgs.mkShell {
-          packages = [
-            gomod2nix.legacyPackages.${system}.gomod2nix
-          ];
-        };
-      }
-    ));
+      devShells = forEachSystem (
+        { system, pkgs }:
+        {
+          default = pkgs.mkShell {
+            packages = [
+              gomod2nix.legacyPackages.${system}.gomod2nix
+            ];
+          };
+        }
+      );
+    };
 }
