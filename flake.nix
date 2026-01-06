@@ -2,10 +2,10 @@
   description = "A modern approach to managing kubectl in multi-cluster environments.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
     gomod2nix = {
-      url = "github:nix-community/gomod2nix";
+      url = "github:nix-community/gomod2nix?rev=9b6058eb92b71f2aa20c86a118aab9e41632e8bc";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
