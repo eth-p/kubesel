@@ -1,4 +1,4 @@
-rec {
+{
   description = "A modern approach to managing kubectl in multi-cluster environments.";
 
   inputs = {
@@ -16,8 +16,9 @@ rec {
       nixpkgs,
       systems,
       gomod2nix,
-    }@inputs:
+    }:
     let
+      rev = self.rev or self.dirtyRev or "unknown";
       forEachSystem =
         fn:
         nixpkgs.lib.genAttrs (import systems) (
@@ -31,54 +32,11 @@ rec {
     {
       packages = forEachSystem (
         { system, pkgs }:
-        let
-          inherit (pkgs.nix-gitignore) gitignoreSource;
+        import ./nix/packages {
+          inherit pkgs;
           inherit (gomod2nix.legacyPackages.${system}) buildGoApplication;
-        in
-        rec {
-          default = kubesel;
-          kubesel = buildGoApplication {
-            name = "kubesel";
-            pwd = ./.;
-            src = gitignoreSource [ ] ./.;
-            modules = ./gomod2nix.toml;
-
-            outputs = [
-              "out"
-              "man"
-            ];
-
-            buildPhase = ''
-              echo "compiling kubesel"
-              mkdir -p $out/bin
-              go build -o $out/bin/kubesel \
-                -ldflags '-X main.GIT_REVISION=${self.rev or self.dirtyRev or "unknown"}' \
-                -tags no_init_completions \
-                ./
-
-              echo "generating fish completions"
-              mkdir -p $out/share/fish/vendor_completions.d
-              $out/bin/kubesel completion fish > $out/share/fish/vendor_completions.d/kubesel.fish
-
-              echo "generating zsh completions"
-              mkdir -p $out/share/zsh/site-functions
-              $out/bin/kubesel completion zsh > $out/share/zsh/site-functions/_kubesel
-
-              echo "generating bash completions"
-              mkdir -p $out/share/bash-completion
-              $out/bin/kubesel completion bash > $out/share/bash-completion/kubesel.bash
-
-              echo "generating manuals"
-              mkdir -p $man/share/man/man1
-              go run hack/generate-man.go -outdir $man/share/man/man1
-            '';
-
-            meta = {
-              inherit description;
-              license = pkgs.lib.licenses.mit;
-              mainProgram = "kubesel";
-            };
-          };
+          flakeGitRev = rev;
+          flakeRoot = ./.;
         }
       );
 
