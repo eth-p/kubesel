@@ -19,10 +19,14 @@ rec {
     }@inputs:
     let
       forEachSystem =
-        fn: nixpkgs.lib.genAttrs (import systems) (system: fn {
-          inherit system;
-          pkgs = (import nixpkgs { inherit system; });
-        });
+        fn:
+        nixpkgs.lib.genAttrs (import systems) (
+          system:
+          fn {
+            inherit system;
+            pkgs = (import nixpkgs { inherit system; });
+          }
+        );
     in
     {
       packages = forEachSystem (

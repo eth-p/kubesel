@@ -3,39 +3,39 @@
 # Program: https://treefmt.com/latest/
 # ==============================================================================
 excludes = [
-	# IDE files
-	".idea",
-	".vscode",
+  # IDE files
+  ".idea",
+  ".vscode",
 
-	# system files
-	".DS_Store",
-	"._*",
+  # system files
+  ".DS_Store",
+  "._*",
 
-	# devenv
-	".devenv*",
-	".direnv",
-	"devenv.local.nix",
+  # devenv
+  ".devenv*",
+  ".direnv",
+  "devenv.local.nix",
 
-	# build
-	"gomod2nix.toml",
-	"/kubesel",
-	"/man",
-	"/dist",
+  # build
+  "gomod2nix.toml",
+  "/kubesel",
+  "/man",
+  "/dist",
 
-	# tooling
-	".envrc",
-	".editorconfig",
-	".git*",
-	"*.lock",
+  # tooling
+  ".envrc",
+  ".editorconfig",
+  ".git*",
+  "*.lock",
 
-	# unsupported
-	"internal/cli/shell-init/*", # Go templates
-	"go.mod",
-	"go.sum",
-	"*.md",
-	"*.png",
-	"Makefile",
-	"LICENSE",
+  # unsupported
+  "internal/cli/shell-init/*",  # Go templates
+  "go.mod",
+  "go.sum",
+  "*.md",
+  "*.png",
+  "Makefile",
+  "LICENSE",
 ]
 
 [formatter.gofmt]

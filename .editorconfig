@@ -46,4 +46,4 @@ indent_style = space
 
 [*.toml]
 indent_size = 2
-indent_style = tab
+indent_style = space
