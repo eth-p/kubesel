@@ -54,4 +54,10 @@ options = []
 command = "prettier"
 options = ["--write"]
 excludes = []
-includes = ["*.toml", "*.json", "*.json5", "*.yaml", "*.yml"]
+includes = ["*.json", "*.json5", "*.yaml", "*.yml"]
+
+[formatter.tombi]
+command = "tombi"
+options = ["format"]
+excludes = []
+includes = ["*.toml"]
