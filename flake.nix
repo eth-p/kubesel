@@ -1,4 +1,4 @@
-{
+rec {
   description = "A modern approach to managing kubectl in multi-cluster environments.";
 
   inputs = {
@@ -68,6 +68,12 @@
               mkdir -p $man/share/man/man1
               go run hack/generate-man.go -outdir $man/share/man/man1
             '';
+
+            meta = {
+              inherit description;
+              license = pkgs.lib.licenses.mit;
+              mainProgram = "kubesel";
+            };
           };
         }
       );
